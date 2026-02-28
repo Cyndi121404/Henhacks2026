@@ -1,0 +1,2003 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SmartCross — Intelligent Crosswalk System</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tensorflow/4.10.0/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2/dist/coco-ssd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d0f14;
+  --surface: #13161e;
+  --surface2: #1a1e28;
+  --border: rgba(255,255,255,0.07);
+  --accent: #f5a623;
+  --accent2: #e8572a;
+  --go: #22c55e;
+  --stop: #ef4444;
+  --warn: #f59e0b;
+  --blue: #3b82f6;
+  --text: #e8eaf0;
+  --muted: rgba(232,234,240,0.45);
+  --font-display: 'Syne', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── NAV ── */
+nav {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0 0 0 24px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  height: 52px;
+  flex-shrink: 0;
+  z-index: 100;
+}
+
+.nav-logo {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-right: 32px;
+  color: var(--text);
+}
+.nav-logo span { color: var(--accent); }
+
+.nav-tab {
+  height: 52px;
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.18s;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+.nav-tab:hover { color: var(--text); }
+.nav-tab.active { color: var(--text); border-bottom-color: var(--accent); }
+.nav-tab .dot { width:6px; height:6px; border-radius:50%; background:currentColor; }
+.nav-tab.live .dot { background: var(--go); box-shadow: 0 0 6px var(--go); animation: pulse 1.5s infinite; }
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
+
+.nav-right { margin-left: auto; display:flex; align-items:center; gap:12px; padding-right:20px; }
+
+.badge {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  padding: 3px 8px;
+  border-radius: 3px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+.badge.green { border-color: rgba(34,197,94,0.3); color: var(--go); }
+
+/* ── PAGES ── */
+.page { display:none; flex:1; overflow:hidden; }
+.page.active { display:flex; }
+
+/* ══════════════════════════════════════
+   PAGE 1 — LIVE MONITOR
+══════════════════════════════════════ */
+#page-live {
+  flex-direction: row;
+  gap: 0;
+}
+
+.live-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+.camera-container {
+  flex: 1;
+  position: relative;
+  background: #000;
+  overflow: hidden;
+  min-height: 0;
+}
+
+#video {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+  transform: scaleX(-1);
+}
+
+#canvas {
+  position: absolute; inset:0;
+  width: 100%; height: 100%;
+  transform: scaleX(-1);
+  pointer-events: none;
+}
+
+.cam-overlay {
+  position: absolute; inset: 0;
+  pointer-events: none;
+}
+
+.cam-corner {
+  position: absolute;
+  width: 24px; height: 24px;
+}
+.cam-corner.tl { top:12px; left:12px; border-top: 2px solid var(--accent); border-left: 2px solid var(--accent); }
+.cam-corner.tr { top:12px; right:12px; border-top: 2px solid var(--accent); border-right: 2px solid var(--accent); }
+.cam-corner.bl { bottom:12px; left:12px; border-bottom: 2px solid var(--accent); border-left: 2px solid var(--accent); }
+.cam-corner.br { bottom:12px; right:12px; border-bottom: 2px solid var(--accent); border-right: 2px solid var(--accent); }
+
+.cam-info {
+  position: absolute;
+  top: 16px; left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: rgba(255,255,255,0.5);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.cam-fps {
+  position: absolute;
+  top: 12px; right: 52px;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: rgba(255,255,255,0.4);
+}
+
+.cam-rec {
+  position: absolute;
+  top: 14px; left: 14px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--stop);
+  letter-spacing: 0.1em;
+}
+.rec-dot { width:6px; height:6px; border-radius:50%; background:var(--stop); animation: pulse 1s infinite; }
+
+/* Traffic light signal display */
+.signal-overlay {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: flex-end;
+  gap: 20px;
+  pointer-events: none;
+}
+
+.traffic-light {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: rgba(0,0,0,0.85);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+.light-label { font-family: var(--font-mono); font-size: 0.55rem; color: rgba(255,255,255,0.4); letter-spacing:0.1em; text-transform:uppercase; }
+.lights { display: flex; flex-direction: column; gap: 5px; }
+.light-bulb { width: 20px; height: 20px; border-radius: 50%; background: rgba(255,255,255,0.08); transition: all 0.3s; }
+.light-bulb.red.on { background: #ef4444; box-shadow: 0 0 12px #ef4444; }
+.light-bulb.yellow.on { background: #f59e0b; box-shadow: 0 0 12px #f59e0b; }
+.light-bulb.green.on { background: #22c55e; box-shadow: 0 0 12px #22c55e; }
+
+.walk-signal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0,0,0,0.85);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 8px 14px;
+}
+.walk-icon {
+  font-size: 2rem;
+  transition: all 0.3s;
+  filter: grayscale(1) opacity(0.3);
+}
+.walk-icon.walk { filter: none; animation: walkAnim 0.5s ease-in-out infinite alternate; }
+.walk-icon.dont-walk { filter: none; color: var(--stop); animation: none; }
+@keyframes walkAnim { from{transform:translateY(0)} to{transform:translateY(-2px)} }
+
+.countdown-ring {
+  width: 48px; height: 48px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.countdown-ring svg { position: absolute; inset:0; transform: rotate(-90deg); }
+.countdown-ring .ring-track { fill:none; stroke: rgba(255,255,255,0.1); stroke-width: 3; }
+.countdown-ring .ring-fill { fill:none; stroke-width: 3; stroke-linecap: round; transition: stroke-dashoffset 1s linear, stroke 0.3s; }
+.countdown-num {
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--text);
+  z-index: 1;
+}
+
+/* Bottom bar */
+.cam-bottom-bar {
+  height: 48px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.voice-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  color: var(--muted);
+  flex: 1;
+}
+.voice-bars { display: flex; align-items: flex-end; gap: 2px; height: 16px; }
+.voice-bar {
+  width: 3px;
+  background: var(--accent);
+  border-radius: 1.5px;
+  transition: height 0.15s;
+  opacity: 0.4;
+}
+.voice-bar.active { opacity: 1; animation: voiceAnim 0.3s ease-in-out infinite alternate; }
+.voice-bar:nth-child(1) { animation-delay: 0s; }
+.voice-bar:nth-child(2) { animation-delay: 0.1s; }
+.voice-bar:nth-child(3) { animation-delay: 0.05s; }
+.voice-bar:nth-child(4) { animation-delay: 0.15s; }
+@keyframes voiceAnim { from{height:4px}to{height:14px} }
+
+.btn {
+  padding: 7px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.18s;
+  white-space: nowrap;
+}
+.btn:hover { border-color: rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 600; }
+.btn.primary:hover { filter: brightness(1.1); }
+.btn.danger { border-color: rgba(239,68,68,0.4); color: var(--stop); }
+
+/* Right panel */
+.live-sidebar {
+  width: 300px;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebar-section {
+  border-bottom: 1px solid var(--border);
+  padding: 14px 16px;
+}
+
+.sidebar-section:last-child { border-bottom: none; flex: 1; overflow: hidden; display:flex; flex-direction:column; }
+
+.section-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+/* Stats grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.stat-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+.stat-card-val {
+  font-family: var(--font-mono);
+  font-size: 1.4rem;
+  font-weight: 500;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.stat-card-val.green { color: var(--go); }
+.stat-card-val.red { color: var(--stop); }
+.stat-card-val.amber { color: var(--warn); }
+.stat-card-val.blue { color: var(--blue); }
+.stat-card-label { font-size: 0.68rem; color: var(--muted); }
+
+/* Crossing time bar */
+.time-bar-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.time-row { display: flex; align-items: center; justify-content: space-between; }
+.time-bar {
+  height: 6px;
+  background: var(--surface2);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.time-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 1s linear, background 0.3s;
+}
+.time-label { font-size: 0.72rem; color: var(--muted); }
+.time-val { font-family: var(--font-mono); font-size: 0.8rem; font-weight: 500; }
+
+/* Detections */
+.detection-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 0;
+}
+.detection-list::-webkit-scrollbar { width:3px; }
+.detection-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); }
+
+.det-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  font-size: 0.72rem;
+  animation: fadeSlide 0.3s ease-out;
+}
+@keyframes fadeSlide { from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:none} }
+
+.det-icon { font-size: 1rem; flex-shrink: 0; }
+.det-info { flex: 1; }
+.det-name { font-weight: 500; color: var(--text); }
+.det-sub { color: var(--muted); font-size: 0.65rem; }
+.det-time { font-family: var(--font-mono); font-size: 0.6rem; color: var(--muted); margin-left: auto; flex-shrink: 0; }
+.det-conf {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  padding: 1px 5px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.det-conf.normal { background: rgba(34,197,94,0.12); color: var(--go); }
+.det-conf.mobility { background: rgba(59,130,246,0.12); color: var(--blue); }
+.det-conf.jay { background: rgba(239,68,68,0.12); color: var(--stop); }
+
+/* ══════════════════════════════════════
+   PAGE 2 — LOG
+══════════════════════════════════════ */
+#page-log {
+  flex-direction: column;
+  overflow: hidden;
+}
+.log-page-header {
+  padding: 20px 28px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.log-page-title {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+.log-filters {
+  display: flex;
+  gap: 6px;
+}
+.filter-btn {
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.filter-btn.active, .filter-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.log-table-wrap { flex: 1; overflow-y: auto; padding: 0 28px 20px; }
+.log-table-wrap::-webkit-scrollbar { width: 4px; }
+.log-table-wrap::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); }
+
+table { width: 100%; border-collapse: collapse; }
+th {
+  text-align: left;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 12px 12px 8px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 5;
+}
+td {
+  padding: 10px 12px;
+  font-size: 0.78rem;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  vertical-align: middle;
+}
+tr:hover td { background: rgba(255,255,255,0.02); }
+.log-type-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.67rem;
+  font-weight: 500;
+}
+.pill-normal { background: rgba(34,197,94,0.1); color: var(--go); }
+.pill-mobility { background: rgba(59,130,246,0.1); color: var(--blue); }
+.pill-jaywalk { background: rgba(239,68,68,0.1); color: var(--stop); }
+.pill-timeout { background: rgba(245,158,11,0.1); color: var(--warn); }
+
+.log-mono { font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted); }
+
+/* ══════════════════════════════════════
+   PAGE 3 — ADMIN SETTINGS
+══════════════════════════════════════ */
+#page-admin {
+  flex-direction: row;
+  overflow: hidden;
+}
+
+.admin-nav {
+  width: 200px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.admin-nav-item {
+  padding: 9px 20px;
+  font-size: 0.78rem;
+  color: var(--muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  transition: all 0.15s;
+  border-left: 2px solid transparent;
+}
+.admin-nav-item:hover { color: var(--text); background: rgba(255,255,255,0.02); }
+.admin-nav-item.active { color: var(--text); background: rgba(245,166,35,0.06); border-left-color: var(--accent); }
+
+.admin-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 32px;
+}
+.admin-content::-webkit-scrollbar { width:4px; }
+.admin-content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); }
+
+.admin-panel { display: none; }
+.admin-panel.active { display: block; }
+
+.admin-h1 {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.admin-sub {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-bottom: 24px;
+}
+
+.settings-group {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.settings-group-title {
+  padding: 12px 16px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+}
+.setting-row {
+  display: flex;
+  align-items: center;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  gap: 16px;
+}
+.setting-row:last-child { border-bottom: none; }
+.setting-label { flex: 1; }
+.setting-label-text { font-size: 0.82rem; font-weight: 500; margin-bottom: 2px; }
+.setting-label-desc { font-size: 0.7rem; color: var(--muted); }
+
+/* Toggle */
+.toggle {
+  width: 40px; height: 22px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.toggle.on { background: var(--accent); border-color: var(--accent); }
+.toggle-thumb {
+  width: 16px; height: 16px;
+  background: rgba(255,255,255,0.4);
+  border-radius: 50%;
+  position: absolute;
+  top: 2px; left: 2px;
+  transition: all 0.2s;
+}
+.toggle.on .toggle-thumb { left: 20px; background: #000; }
+
+/* Range slider */
+.range-wrap { display: flex; align-items: center; gap: 10px; }
+input[type=range] {
+  width: 120px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.range-val {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  min-width: 40px;
+  text-align: right;
+}
+
+/* Crosswalk canvas */
+.crosswalk-editor {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.crosswalk-editor-header {
+  padding: 12px 16px;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+#crosswalk-canvas {
+  display: block;
+  cursor: crosshair;
+  width: 100%;
+}
+.editor-tools {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.tool-btn {
+  padding: 5px 12px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.tool-btn:hover, .tool-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(245,166,35,0.06); }
+.tool-btn.clear { border-color: rgba(239,68,68,0.3); color: var(--stop); }
+.tool-btn.clear:hover { background: rgba(239,68,68,0.06); }
+
+.zone-legend {
+  display: flex;
+  gap: 12px;
+  padding: 10px 16px;
+  font-size: 0.7rem;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.zone-legend-item { display:flex; align-items:center; gap:5px; }
+.zone-dot { width:10px; height:10px; border-radius:50%; }
+
+/* ══════════════════════════════════════
+   ANNOUNCEMENT TOAST
+══════════════════════════════════════ */
+#announcement-toast {
+  position: fixed;
+  bottom: 70px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: rgba(10,12,18,0.95);
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  padding: 12px 20px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text);
+  z-index: 1000;
+  opacity: 0;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  backdrop-filter: blur(10px);
+  max-width: 400px;
+  text-align: center;
+  pointer-events: none;
+}
+#announcement-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+#announcement-toast .toast-icon { font-size: 1.2rem; }
+
+</style>
+</head>
+<body>
+
+<!-- ── NAVIGATION ── -->
+<nav>
+  <div class="nav-logo">Smart<span>Cross</span></div>
+  <div class="nav-tab live active" data-page="live" onclick="switchPage('live',this)">
+    <div class="dot"></div> Live Monitor
+  </div>
+  <div class="nav-tab" data-page="log" onclick="switchPage('log',this)">
+    📋 Event Log
+  </div>
+  <div class="nav-tab" data-page="admin" onclick="switchPage('admin',this)">
+    ⚙️ Admin Settings
+  </div>
+  <div class="nav-right">
+    <span class="badge green" id="model-badge">● Loading model…</span>
+    <span class="badge" id="time-badge">--:--:--</span>
+  </div>
+</nav>
+
+<!-- ═══════════ PAGE: LIVE ═══════════ -->
+<div class="page active" id="page-live">
+  <div class="live-main">
+    <div class="camera-container">
+      <video id="video" playsinline autoplay muted></video>
+      <canvas id="canvas"></canvas>
+      <div class="cam-overlay">
+        <div class="cam-corner tl"></div>
+        <div class="cam-corner tr"></div>
+        <div class="cam-corner bl"></div>
+        <div class="cam-corner br"></div>
+        <div class="cam-rec"><div class="rec-dot"></div> LIVE</div>
+        <div class="cam-info" id="cam-info">INITIALIZING…</div>
+        <div class="cam-fps" id="cam-fps">-- FPS</div>
+      </div>
+
+      <!-- Signal overlay bottom center -->
+      <div class="signal-overlay">
+        <!-- Traffic light -->
+        <div class="traffic-light">
+          <div class="light-label">VEHICLE</div>
+          <div class="lights">
+            <div class="light-bulb red" id="light-red"></div>
+            <div class="light-bulb yellow" id="light-yellow"></div>
+            <div class="light-bulb green" id="light-green"></div>
+          </div>
+        </div>
+
+        <!-- Pedestrian walk signal -->
+        <div class="walk-signal">
+          <div class="light-label">PEDESTRIAN</div>
+          <div class="walk-icon" id="walk-icon">🚶</div>
+          <div class="countdown-ring" id="countdown-ring">
+            <svg viewBox="0 0 48 48">
+              <circle class="ring-track" cx="24" cy="24" r="20"/>
+              <circle class="ring-fill" id="ring-fill" cx="24" cy="24" r="20"
+                stroke-dasharray="125.7" stroke-dashoffset="0" stroke="#22c55e"/>
+            </svg>
+            <span class="countdown-num" id="countdown-num">--</span>
+          </div>
+        </div>
+
+        <!-- Traffic light 2 (far side) -->
+        <div class="traffic-light">
+          <div class="light-label">VEHICLE</div>
+          <div class="lights">
+            <div class="light-bulb red" id="light-red2"></div>
+            <div class="light-bulb yellow" id="light-yellow2"></div>
+            <div class="light-bulb green" id="light-green2"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom controls bar -->
+    <div class="cam-bottom-bar">
+      <div class="voice-indicator" id="voice-indicator">
+        <div class="voice-bars" id="voice-bars">
+          <div class="voice-bar" style="height:6px"></div>
+          <div class="voice-bar" style="height:10px"></div>
+          <div class="voice-bar" style="height:8px"></div>
+          <div class="voice-bar" style="height:12px"></div>
+          <div class="voice-bar" style="height:6px"></div>
+        </div>
+        <span id="voice-text" style="font-size:0.72rem; color:var(--muted)">No speech</span>
+      </div>
+      <button class="btn primary" id="start-btn" onclick="startCamera()">▶ Start Camera</button>
+      <button class="btn danger" id="stop-btn" onclick="stopCamera()" disabled>■ Stop</button>
+      <button class="btn" onclick="triggerCrossNow()">🚶 Trigger Cross</button>
+    </div>
+  </div>
+
+  <!-- Right sidebar -->
+  <div class="live-sidebar">
+    <div class="sidebar-section">
+      <div class="section-label">Statistics</div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-card-val green" id="stat-crossed">0</div>
+          <div class="stat-card-label">Crossed Today</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-val red" id="stat-jay">0</div>
+          <div class="stat-card-label">Jaywalkers</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-val blue" id="stat-mobility">0</div>
+          <div class="stat-card-label">Mobility Assists</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-val amber" id="stat-avgtime">--s</div>
+          <div class="stat-card-label">Avg Cross Time</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="section-label">Crossing Timer</div>
+      <div class="time-bar-wrap">
+        <div class="time-row">
+          <span class="time-label">Time Remaining</span>
+          <span class="time-val" id="timer-val">--s</span>
+        </div>
+        <div class="time-bar">
+          <div class="time-bar-fill" id="time-bar-fill" style="width:0%; background: var(--go);"></div>
+        </div>
+        <div class="time-row" style="margin-top:4px">
+          <span class="time-label" style="font-size:0.67rem">Phase</span>
+          <span class="time-val" style="font-size:0.7rem; color:var(--muted)" id="phase-label">Waiting</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-section" style="flex:1; overflow:hidden; display:flex; flex-direction:column;">
+      <div class="section-label">Detections</div>
+      <div class="detection-list" id="detection-list">
+        <div style="color:var(--muted); font-size:0.72rem; text-align:center; padding:20px">Camera not started</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ PAGE: LOG ═══════════ -->
+<div class="page" id="page-log">
+  <div class="log-page-header">
+    <div>
+      <div class="log-page-title">Event Log</div>
+      <div style="font-size:0.75rem; color:var(--muted); margin-top:2px">All pedestrian crossings & incidents</div>
+    </div>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <div class="log-filters">
+        <button class="filter-btn active" onclick="filterLog('all',this)">All</button>
+        <button class="filter-btn" onclick="filterLog('normal',this)">Normal</button>
+        <button class="filter-btn" onclick="filterLog('mobility',this)">Mobility Aid</button>
+        <button class="filter-btn" onclick="filterLog('jaywalk',this)">Jaywalkers</button>
+      </div>
+      <button class="btn" onclick="exportLog()">↓ Export CSV</button>
+    </div>
+  </div>
+  <div class="log-table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Event Type</th>
+          <th>Persons</th>
+          <th>Cross Time</th>
+          <th>Confidence</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody id="log-tbody">
+        <tr><td colspan="6" style="text-align:center; color:var(--muted); padding:40px;">No events yet — start the camera</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════ PAGE: ADMIN ═══════════ -->
+<div class="page" id="page-admin">
+  <div class="admin-nav">
+    <div class="admin-nav-item active" onclick="switchAdminPanel('timing',this)">⏱ Timing</div>
+    <div class="admin-nav-item" onclick="switchAdminPanel('detection',this)">👁 Detection</div>
+    <div class="admin-nav-item" onclick="switchAdminPanel('voice',this)">🔊 Voice / Alerts</div>
+    <div class="admin-nav-item" onclick="switchAdminPanel('zones',this)">📐 Crossing Zones</div>
+    <div class="admin-nav-item" onclick="switchAdminPanel('signals',this)">🚦 Signal Config</div>
+  </div>
+
+  <div class="admin-content">
+
+    <!-- TIMING -->
+    <div class="admin-panel active" id="panel-timing">
+      <div class="admin-h1">Timing Configuration</div>
+      <div class="admin-sub">Control crossing durations and adaptive adjustment settings</div>
+
+      <div class="settings-group">
+        <div class="settings-group-title">Base Timings</div>
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-label-text">Default Crossing Time</div>
+            <div class="setting-label-desc">Standard green phase for pedestrians</div>
+          </div>
+          <div class="range-wrap">
+            <input type="range" min="10" max="60" value="20" id="r-default-time" oninput="updateRange('r-default-time','rv-default-time','s',v=>v)">
+            <span class="range-val" id="rv-default-time">20s</span>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-label-text">Mobility Aid Extension</div>
+            <div class="setting-label-desc">Extra time added when wheelchair/cane detected</div>
+          </div>
+          <div class="range-wrap">
+            <input type="range" min="5" max="30" value="15" id="r-mobility-ext" oninput="updateRange('r-mobility-ext','rv-mobility-ext','s',v=>v)">
+            <span class="range-val" id="rv-mobility-ext">15s</span>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-label-text">Warning Countdown Start</div>
+            <div class="setting-label-desc">Seconds before end to flash warning</div>
+          </div>
+          <div class="range-wrap">
+            <input type="range" min="3" max="15" value="7" id="r-warn-start" oninput="updateRange('r-warn-start','rv-warn-start','s',v=>v)">
+            <span class="range-val" id="rv-warn-start">7s</span>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-label-text">Minimum Wait Reduction</div>
+            <div class="setting-label-desc">Max % that smart timing can cut the wait time</div>
+          </div>
+          <div class="range-wrap">
+            <input type="range" min="0" max="70" value="40" id="r-min-wait" oninput="updateRange('r-min-wait','rv-min-wait','%',v=>v)">
+            <span class="range-val" id="rv-min-wait">40%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-title">Adaptive Timing</div>
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-label-text">Smart Queue Detection</div>
+            <div class="setting-label-desc">Trigger crossing earlier when queue > 3 persons</div>
+          </div>
+          <div class="toggle on" id="t-smart-queue" onclick="toggleSetting(this)">
+            <div class="toggle-thumb"></div>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-label-text">Extend for Slow Crossers</div>
+            <div class="setting-label-desc">Add time if person is still in road near end</div>
+          </div>
+          <div class="toggle on" id="t-slow-extend" onclick="toggleSetting(this)">
+            <div class="toggle-thumb"></div>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-label-text">Peak Hour Boost</div>
+            <div class="setting-label-desc">Auto-increase crossing time 7-9am & 5-7pm</div>
+          </div>
+          <div class="toggle" id="t-peak" onclick="toggleSetting(this)">
+            <div class="toggle-thumb"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DETECTION -->
+    <div class="admin-panel" id="panel-detection">
+      <div class="admin-h1">Detection Settings</div>
+      <div class="admin-sub">Configure AI detection thresholds and person classification</div>
+
+      <div class="settings-group">
+        <div class="settings-group-title">Confidence Thresholds</div>
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-label-text">Person Detection Threshold</div>
+            <div class="setting-label-desc">Min confidence to count as a person</div>
+          </div>
+          <div class="range-wrap">
+            <input type="range" min="30" max="95" value="55" id="r-person-thresh" oninput="updateRange('r-person-thresh','rv-person-thresh','%',v=>v)">
+            <span class="range-val" id="rv-person-thresh">55%</span>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-label-text">Mobility Aid Sensitivity</div>
+            <div class="setting-label-desc">How aggressively to flag wheelchair/cane</div>
+          </div>
+          <div class="range-wrap">
+            <input type="range" min="1" max="5" value="3" id="r-mob-sens" oninput="updateRange('r-mob-sens','rv-mob-sens','',v=>['Low','Med-Low','Medium','Med-High','High'][v-1])">
+            <span class="range-val" id="rv-mob-sens">Medium</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-title">Jaywalking Detection</div>
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-label-text">Enable Jaywalker Logging</div>
+            <div class="setting-label-desc">Log crossings that occur outside crossing zone</div>
+          </div>
+          <div class="toggle on" id="t-jay-log" onclick="toggleSetting(this)">
+            <div class="toggle-thumb"></div>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-label-text">Jaywalker Alert Sound</div>
+            <div class="setting-label-desc">Play alert when jaywalker detected</div>
+          </div>
+          <div class="toggle" id="t-jay-alert" onclick="toggleSetting(this)">
+            <div class="toggle-thumb"></div>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-label-text">Red-phase Detection Buffer</div>
+            <div class="setting-label-desc">Seconds after light change before flagging</div>
+          </div>
+          <div class="range-wrap">
+            <input type="range" min="0" max="10" value="3" id="r-jay-buffer" oninput="updateRange('r-jay-buffer','rv-jay-buffer','s',v=>v)">
+            <span class="range-val" id="rv-jay-buffer">3s</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VOICE -->
+    <div class="admin-panel" id="panel-voice">
+      <div class="admin-h1">Voice & Alerts</div>
+      <div class="admin-sub">Configure verbal announcements and audio alerts</div>
+
+      <div class="settings-group">
+        <div class="settings-group-title">Text-to-Speech</div>
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-label-text">Enable Voice Announcements</div>
+            <div class="setting-label-desc">Verbally instruct pedestrians using TTS</div>
+          </div>
+          <div class="toggle on" id="t-voice" onclick="toggleSetting(this)">
+            <div class="toggle-thumb"></div>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-label-text">Speech Rate</div>
+          </div>
+          <div class="range-wrap">
+            <input type="range" min="5" max="15" value="9" id="r-speech-rate" oninput="updateRange('r-speech-rate','rv-speech-rate','',v=>(v/10).toFixed(1))">
+            <span class="range-val" id="rv-speech-rate">0.9</span>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-label-text">Voice Volume</div>
+          </div>
+          <div class="range-wrap">
+            <input type="range" min="0" max="10" value="9" id="r-vol" oninput="updateRange('r-vol','rv-vol','',v=>(v/10).toFixed(1))">
+            <span class="range-val" id="rv-vol">0.9</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-title">Announcement Messages</div>
+        <div class="setting-row" style="flex-direction:column; align-items:flex-start; gap:8px">
+          <div class="setting-label-text">Walk Signal Message</div>
+          <input type="text" id="msg-walk" value="Walk signal is on. It is safe to cross." style="width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:5px; padding:8px 12px; color:var(--text); font-family:var(--font-body); font-size:0.8rem;">
+        </div>
+        <div class="setting-row" style="flex-direction:column; align-items:flex-start; gap:8px">
+          <div class="setting-label-text">Mobility Aid Message</div>
+          <input type="text" id="msg-mobility" value="Extended crossing time activated. Please cross carefully." style="width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:5px; padding:8px 12px; color:var(--text); font-family:var(--font-body); font-size:0.8rem;">
+        </div>
+        <div class="setting-row" style="flex-direction:column; align-items:flex-start; gap:8px">
+          <div class="setting-label-text">Warning Message (last 7s)</div>
+          <input type="text" id="msg-warn" value="Warning. Signal changing soon. Please finish crossing." style="width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:5px; padding:8px 12px; color:var(--text); font-family:var(--font-body); font-size:0.8rem;">
+        </div>
+        <div class="setting-row" style="flex-direction:column; align-items:flex-start; gap:8px">
+          <div class="setting-label-text">Do Not Cross Message</div>
+          <input type="text" id="msg-stop" value="Do not cross. Wait for the walk signal." style="width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:5px; padding:8px 12px; color:var(--text); font-family:var(--font-body); font-size:0.8rem;">
+        </div>
+      </div>
+
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="btn" onclick="testSpeak('walk')">🔊 Test Walk</button>
+        <button class="btn" onclick="testSpeak('mobility')">🔊 Test Mobility</button>
+        <button class="btn" onclick="testSpeak('warn')">🔊 Test Warning</button>
+        <button class="btn" onclick="testSpeak('stop')">🔊 Test Stop</button>
+      </div>
+    </div>
+
+    <!-- ZONES -->
+    <div class="admin-panel" id="panel-zones">
+      <div class="admin-h1">Crossing Zones</div>
+      <div class="admin-sub">Define crossing lines and detection zones by drag-and-dropping on the canvas</div>
+
+      <div class="crosswalk-editor">
+        <div class="crosswalk-editor-header">
+          <span style="font-size:0.78rem; font-weight:500">Zone Editor — Intersection View</span>
+          <span style="font-size:0.7rem; color:var(--muted)" id="zone-count">0 zones defined</span>
+        </div>
+        <canvas id="crosswalk-canvas" width="800" height="350"></canvas>
+        <div class="editor-tools">
+          <button class="tool-btn active" id="tool-cross" onclick="setTool('crosswalk',this)">+ Crosswalk Zone</button>
+          <button class="tool-btn" id="tool-wait" onclick="setTool('wait',this)">+ Wait Zone</button>
+          <button class="tool-btn" id="tool-line" onclick="setTool('line',this)">+ Crossing Line</button>
+          <button class="tool-btn" id="tool-select" onclick="setTool('select',this)">↖ Select / Move</button>
+          <button class="tool-btn clear" onclick="clearZones()">✕ Clear All</button>
+        </div>
+        <div class="zone-legend">
+          <span class="zone-legend-item"><span class="zone-dot" style="background:rgba(34,197,94,0.6)"></span> Crosswalk Zone</span>
+          <span class="zone-legend-item"><span class="zone-dot" style="background:rgba(59,130,246,0.6)"></span> Wait Zone</span>
+          <span class="zone-legend-item"><span class="zone-dot" style="background:rgba(245,158,11,0.6)"></span> Crossing Line</span>
+          <span style="color:var(--muted); font-size:0.67rem; margin-left:auto">Click and drag to draw • Double-click to delete</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIGNALS -->
+    <div class="admin-panel" id="panel-signals">
+      <div class="admin-h1">Signal Configuration</div>
+      <div class="admin-sub">Configure traffic light phases and pedestrian signal behavior</div>
+
+      <div class="settings-group">
+        <div class="settings-group-title">Signal Timing</div>
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-label-text">Vehicle Red Phase</div>
+            <div class="setting-label-desc">How long vehicles stop (pedestrians walk)</div>
+          </div>
+          <div class="range-wrap">
+            <input type="range" min="15" max="90" value="30" id="r-red-phase" oninput="updateRange('r-red-phase','rv-red-phase','s',v=>v)">
+            <span class="range-val" id="rv-red-phase">30s</span>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-label-text">Yellow Transition Phase</div>
+          </div>
+          <div class="range-wrap">
+            <input type="range" min="2" max="8" value="4" id="r-yellow-phase" oninput="updateRange('r-yellow-phase','rv-yellow-phase','s',v=>v)">
+            <span class="range-val" id="rv-yellow-phase">4s</span>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-label-text">Vehicle Green Phase</div>
+          </div>
+          <div class="range-wrap">
+            <input type="range" min="15" max="120" value="45" id="r-green-phase" oninput="updateRange('r-green-phase','rv-green-phase','s',v=>v)">
+            <span class="range-val" id="rv-green-phase">45s</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-title">Pedestrian Signal Options</div>
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-label-text">Flashing Don't Walk (last 5s)</div>
+          </div>
+          <div class="toggle on" id="t-flash-dw" onclick="toggleSetting(this)">
+            <div class="toggle-thumb"></div>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-label-text">Audible Beep on Walk Signal</div>
+          </div>
+          <div class="toggle on" id="t-beep" onclick="toggleSetting(this)">
+            <div class="toggle-thumb"></div>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-label-text">Demand-Responsive Mode</div>
+            <div class="setting-label-desc">Only cycle pedestrian phase when persons waiting</div>
+          </div>
+          <div class="toggle on" id="t-demand" onclick="toggleSetting(this)">
+            <div class="toggle-thumb"></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:8px">
+        <button class="btn primary" onclick="saveSettings()">💾 Save All Settings</button>
+      </div>
+    </div>
+
+  </div><!-- /admin-content -->
+</div>
+
+<!-- Announcement toast -->
+<div id="announcement-toast">
+  <span class="toast-icon">🔊</span>
+  <span id="toast-text">Walk signal is on.</span>
+</div>
+
+<script>
+// ═══════════════════════════════════════
+// GLOBALS
+// ═══════════════════════════════════════
+let model = null;
+let stream = null;
+let animId = null;
+let running = false;
+let lastFpsTime = 0;
+let frameCount = 0;
+
+let crossingPhase = 'vehicle-green'; // vehicle-green | yellow | pedestrian-walk | pedestrian-warn | pedestrian-end
+let phaseTimer = 0;
+let phaseMax = 45;
+let countdownTimer = null;
+let crossingTime = 20;
+let mobilityDetected = false;
+let warnTriggered = false;
+let lastSpeech = '';
+
+// Stats
+let statCrossed = 0, statJay = 0, statMobility = 0;
+let crossTimes = [];
+let eventLog = [];
+
+// ─── PAGE SWITCHING ───
+function switchPage(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  el.classList.add('active');
+}
+
+function switchAdminPanel(id, el) {
+  document.querySelectorAll('.admin-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.admin-nav-item').forEach(i => i.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  el.classList.add('active');
+}
+
+// ─── CLOCK ───
+setInterval(() => {
+  const n = new Date();
+  document.getElementById('time-badge').textContent =
+    [n.getHours(),n.getMinutes(),n.getSeconds()].map(v=>String(v).padStart(2,'0')).join(':');
+}, 1000);
+
+// ─── SETTINGS HELPERS ───
+function updateRange(id, valId, suffix, fn) {
+  const v = document.getElementById(id).value;
+  document.getElementById(valId).textContent = fn(v) + suffix;
+}
+function toggleSetting(el) {
+  el.classList.toggle('on');
+}
+
+// ═══════════════════════════════════════
+// TRAFFIC LIGHT + PHASE ENGINE
+// ═══════════════════════════════════════
+const PHASES = {
+  'vehicle-green': { duration: () => getSettingVal('r-green-phase', 45), next: 'yellow' },
+  'yellow':        { duration: () => getSettingVal('r-yellow-phase', 4), next: 'pedestrian-walk' },
+  'pedestrian-walk':{ duration: () => getCrossingTime(), next: 'pedestrian-warn' },
+  'pedestrian-warn':{ duration: () => getSettingVal('r-warn-start', 7), next: 'vehicle-green' },
+};
+
+function getSettingVal(id, def) {
+  const el = document.getElementById(id);
+  return el ? parseInt(el.value) : def;
+}
+
+function getCrossingTime() {
+  let t = getSettingVal('r-default-time', 20);
+  if (mobilityDetected && isToggleOn('t-slow-extend')) {
+    t += getSettingVal('r-mobility-ext', 15);
+  }
+  return t;
+}
+
+function isToggleOn(id) {
+  const el = document.getElementById(id);
+  return el ? el.classList.contains('on') : true;
+}
+
+function setPhase(phase) {
+  crossingPhase = phase;
+  phaseMax = PHASES[phase].duration();
+  phaseTimer = phaseMax;
+  warnTriggered = false;
+
+  updateLights();
+  updatePhaseUI();
+  onPhaseStart(phase);
+
+  clearInterval(countdownTimer);
+  countdownTimer = setInterval(() => tickPhase(), 1000);
+}
+
+function tickPhase() {
+  phaseTimer--;
+  updateTimerUI();
+  if (phaseTimer <= 0) {
+    clearInterval(countdownTimer);
+    setPhase(PHASES[crossingPhase].next);
+  }
+}
+
+function updateLights() {
+  const lights = { red: false, yellow: false, green: false };
+  const walkOn = crossingPhase === 'pedestrian-walk';
+  const warnOn = crossingPhase === 'pedestrian-warn';
+
+  if (crossingPhase === 'vehicle-green') { lights.green = true; }
+  else if (crossingPhase === 'yellow')   { lights.yellow = true; }
+  else                                   { lights.red = true; }
+
+  ['red','yellow','green'].forEach(c => {
+    document.getElementById('light-'+c).classList.toggle('on', lights[c]);
+    document.getElementById('light-'+c+'2').classList.toggle('on', lights[c]);
+  });
+
+  const walkIcon = document.getElementById('walk-icon');
+  if (walkOn) { walkIcon.textContent = '🚶'; walkIcon.className = 'walk-icon walk'; }
+  else if (warnOn) { walkIcon.textContent = '🚷'; walkIcon.className = 'walk-icon dont-walk'; }
+  else { walkIcon.textContent = '🛑'; walkIcon.className = 'walk-icon dont-walk'; }
+}
+
+function updateTimerUI() {
+  const n = document.getElementById('countdown-num');
+  const fill = document.getElementById('ring-fill');
+  const bar = document.getElementById('time-bar-fill');
+  const tv = document.getElementById('timer-val');
+
+  n.textContent = phaseTimer;
+  tv.textContent = phaseTimer + 's';
+
+  const pct = phaseTimer / phaseMax;
+  const circumference = 125.7;
+  fill.setAttribute('stroke-dashoffset', circumference * (1 - pct));
+
+  const barPct = pct * 100;
+  bar.style.width = barPct + '%';
+
+  let color;
+  if (crossingPhase === 'pedestrian-walk') color = '#22c55e';
+  else if (crossingPhase === 'pedestrian-warn') color = '#f59e0b';
+  else color = '#ef4444';
+  fill.setAttribute('stroke', color);
+  bar.style.background = color;
+}
+
+function updatePhaseUI() {
+  const labels = {
+    'vehicle-green': 'Vehicle Green',
+    'yellow': 'Transitioning',
+    'pedestrian-walk': 'Walk Signal',
+    'pedestrian-warn': 'Warning Phase',
+  };
+  document.getElementById('phase-label').textContent = labels[crossingPhase] || crossingPhase;
+}
+
+function onPhaseStart(phase) {
+  if (phase === 'pedestrian-walk') {
+    if (mobilityDetected) {
+      speak('mobility');
+      showToast('🦽 Mobility aid detected — Extended time: ' + getCrossingTime() + 's', '#3b82f6');
+    } else {
+      speak('walk');
+      showToast('🚶 Walk signal active — ' + getCrossingTime() + 's', '#22c55e');
+    }
+    logEvent('walk', mobilityDetected);
+  } else if (phase === 'pedestrian-warn') {
+    speak('warn');
+    showToast('⚠️ Signal changing soon!', '#f59e0b');
+  } else if (phase === 'vehicle-green') {
+    speak('stop');
+  }
+}
+
+function triggerCrossNow() {
+  if (crossingPhase === 'vehicle-green') {
+    clearInterval(countdownTimer);
+    setPhase('yellow');
+    showToast('🖐 Manual crossing triggered', '#f5a623');
+  }
+}
+
+setPhase('vehicle-green');
+
+// ═══════════════════════════════════════
+// CAMERA & DETECTION
+// ═══════════════════════════════════════
+async function loadModel() {
+  try {
+    document.getElementById('model-badge').textContent = '● Loading…';
+    model = await cocoSsd.load();
+    document.getElementById('model-badge').textContent = '● Model Ready';
+    document.getElementById('model-badge').classList.add('green');
+    document.getElementById('start-btn').disabled = false;
+  } catch(e) {
+    document.getElementById('model-badge').textContent = '● Model Error';
+    console.error(e);
+  }
+}
+
+async function startCamera() {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: { width:1280, height:720 }, audio:false });
+    const video = document.getElementById('video');
+    video.srcObject = stream;
+    await video.play();
+    running = true;
+    document.getElementById('start-btn').disabled = true;
+    document.getElementById('stop-btn').disabled = false;
+    document.getElementById('cam-info').textContent = 'SMARTCROSS // DETECTION ACTIVE';
+    detect();
+  } catch(e) {
+    showToast('❌ Camera access denied', '#ef4444');
+  }
+}
+
+function stopCamera() {
+  running = false;
+  if (animId) cancelAnimationFrame(animId);
+  if (stream) stream.getTracks().forEach(t => t.stop());
+  const canvas = document.getElementById('canvas');
+  canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+  document.getElementById('start-btn').disabled = false;
+  document.getElementById('stop-btn').disabled = true;
+  document.getElementById('cam-info').textContent = 'CAMERA STOPPED';
+}
+
+let lastDetectionLog = 0;
+let lastMobilityCheck = 0;
+let prevPersonCount = 0;
+
+async function detect() {
+  if (!running) return;
+
+  const video = document.getElementById('video');
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+
+  frameCount++;
+  const now = performance.now();
+  if (now - lastFpsTime > 1000) {
+    document.getElementById('cam-fps').textContent = frameCount + ' FPS';
+    frameCount = 0;
+    lastFpsTime = now;
+  }
+
+  if (video.readyState === 4) {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    const predictions = await model.detect(video);
+    const persons = predictions.filter(p => p.class === 'person' &&
+      p.score * 100 >= getSettingVal('r-person-thresh', 55));
+
+    // Mobility detection (using 'sports ball' or 'umbrella' as proxy for cane — in reality use custom model)
+    const mobilityObjs = predictions.filter(p =>
+      ['sports ball','umbrella','handbag','backpack'].includes(p.class));
+    // Simulate: randomly flag some sessions as mobility aid with low frequency
+    const hasMobility = mobilityObjs.length > 0 || (Math.random() < 0.003);
+    if (hasMobility && now - lastMobilityCheck > 5000) {
+      mobilityDetected = true;
+      lastMobilityCheck = now;
+      setTimeout(() => { mobilityDetected = false; }, 20000);
+      addDetectionItem('🦽', 'Mobility Aid', 'Cane / Wheelchair detected', 'mobility');
+      statMobility++;
+      document.getElementById('stat-mobility').textContent = statMobility;
+    }
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw crossing zone overlay (from settings)
+    drawZoneOverlay(ctx, canvas.width, canvas.height);
+
+    persons.forEach((pred, i) => {
+      const [x,y,w,h] = pred.bbox;
+      const conf = Math.round(pred.score * 100);
+      const isMobility = mobilityDetected && i === 0;
+      const isJay = crossingPhase === 'vehicle-green' && phaseTimer < phaseMax - 5;
+
+      const color = isJay ? '#ef4444' : isMobility ? '#3b82f6' : '#22c55e';
+
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 8;
+      ctx.strokeRect(x, y, w, h);
+      ctx.shadowBlur = 0;
+
+      // Corner brackets
+      const cs = 14;
+      ctx.lineWidth = 3;
+      [[x,y],[x+w,y],[x,y+h],[x+w,y+h]].forEach(([cx,cy], ci) => {
+        const sx = ci%2===0?1:-1, sy = ci<2?1:-1;
+        ctx.beginPath();
+        ctx.moveTo(cx+sx*cs, cy);
+        ctx.lineTo(cx, cy);
+        ctx.lineTo(cx, cy+sy*cs);
+        ctx.stroke();
+      });
+
+      // Label
+      const label = isJay ? `⚠ JAYWALKER` : isMobility ? `🦽 MOBILITY` : `PERSON ${i+1}`;
+      ctx.fillStyle = 'rgba(0,0,0,0.75)';
+      ctx.fillRect(x, y-22, 160, 22);
+      ctx.fillStyle = color;
+      ctx.font = '11px "DM Mono", monospace';
+      ctx.fillText(`${label}  ${conf}%`, x+6, y-6);
+    });
+
+    // Log detections periodically
+    if (persons.length > 0 && now - lastDetectionLog > 2000) {
+      lastDetectionLog = now;
+      const type = mobilityDetected ? 'mobility' : 'normal';
+      addDetectionItem(mobilityDetected?'🦽':'🚶', `${persons.length} Person(s)`,
+        `Conf: ${Math.round(persons.reduce((s,p)=>s+p.score,0)/persons.length*100)}%`, type);
+    }
+
+    // Jaywalker check
+    if (persons.length > 0 && crossingPhase === 'vehicle-green' && isToggleOn('t-jay-log')) {
+      if (now - lastDetectionLog > 5000) {
+        const delay = getSettingVal('r-jay-buffer', 3);
+        if (phaseTimer < phaseMax - delay) {
+          statJay++;
+          document.getElementById('stat-jay').textContent = statJay;
+          addDetectionItem('⚠️', 'Jaywalker', 'Crossing on red', 'jay');
+          logEvent('jaywalk', false);
+          showToast('⚠️ Jaywalker detected!', '#ef4444');
+        }
+      }
+    }
+
+    // Smart queue trigger
+    if (isToggleOn('t-smart-queue') && persons.length >= 3 &&
+        crossingPhase === 'vehicle-green' && phaseTimer < phaseMax - 5) {
+      triggerCrossNow();
+    }
+
+    // Update voice bars based on detection activity
+    updateVoiceBars(persons.length > 0);
+  }
+
+  animId = requestAnimationFrame(detect);
+}
+
+function drawZoneOverlay(ctx, w, h) {
+  if (!zoneShapes.length) return;
+  zoneShapes.forEach(z => {
+    const scaleX = w / 800, scaleY = h / 350;
+    ctx.save();
+    if (z.type === 'crosswalk') {
+      ctx.fillStyle = 'rgba(34,197,94,0.08)';
+      ctx.strokeStyle = 'rgba(34,197,94,0.3)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([6,4]);
+      ctx.fillRect(z.x*scaleX, z.y*scaleY, z.w*scaleX, z.h*scaleY);
+      ctx.strokeRect(z.x*scaleX, z.y*scaleY, z.w*scaleX, z.h*scaleY);
+    } else if (z.type === 'wait') {
+      ctx.fillStyle = 'rgba(59,130,246,0.08)';
+      ctx.strokeStyle = 'rgba(59,130,246,0.3)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([6,4]);
+      ctx.fillRect(z.x*scaleX, z.y*scaleY, z.w*scaleX, z.h*scaleY);
+      ctx.strokeRect(z.x*scaleX, z.y*scaleY, z.w*scaleX, z.h*scaleY);
+    } else if (z.type === 'line') {
+      ctx.strokeStyle = 'rgba(245,158,11,0.6)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.moveTo(z.x*scaleX, z.y*scaleY);
+      ctx.lineTo(z.x2*scaleX, z.y2*scaleY);
+      ctx.stroke();
+    }
+    ctx.restore();
+  });
+}
+
+// ═══════════════════════════════════════
+// VOICE / TTS
+// ═══════════════════════════════════════
+function speak(key) {
+  if (!isToggleOn('t-voice')) return;
+  const msgEl = document.getElementById('msg-' + key);
+  if (!msgEl) return;
+  const msg = msgEl.value;
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+    const utt = new SpeechSynthesisUtterance(msg);
+    utt.rate = parseFloat(document.getElementById('r-speech-rate')?.value || 9) / 10;
+    utt.volume = parseFloat(document.getElementById('r-vol')?.value || 9) / 10;
+    window.speechSynthesis.speak(utt);
+  }
+  // Show voice bars active
+  const bars = document.querySelectorAll('.voice-bars .voice-bar');
+  bars.forEach(b => b.classList.add('active'));
+  document.getElementById('voice-text').textContent = msg.substring(0, 50) + (msg.length > 50 ? '…' : '');
+  setTimeout(() => {
+    bars.forEach(b => b.classList.remove('active'));
+    document.getElementById('voice-text').textContent = 'No speech';
+  }, 4000);
+}
+
+function testSpeak(key) { speak(key); }
+
+function updateVoiceBars(active) {
+  const bars = document.querySelectorAll('.voice-bars .voice-bar');
+  // subtle animation when detection active
+  bars.forEach((b,i) => {
+    b.style.height = active ? (4 + Math.floor(Math.random()*10)) + 'px' : (4+i*2)+'px';
+  });
+}
+
+// ═══════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════
+let toastTimer;
+function showToast(msg, borderColor = 'var(--accent)') {
+  const el = document.getElementById('announcement-toast');
+  document.getElementById('toast-text').textContent = msg;
+  el.style.borderColor = borderColor;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3500);
+}
+
+// ═══════════════════════════════════════
+// DETECTION LIST
+// ═══════════════════════════════════════
+function addDetectionItem(icon, name, sub, type) {
+  const list = document.getElementById('detection-list');
+  if (list.children.length === 1 && list.children[0].tagName !== 'DIV'.toLowerCase()) {
+    // keep going
+  }
+  // Remove placeholder
+  const placeholder = list.querySelector('[style]');
+  if (placeholder) list.removeChild(placeholder);
+
+  const item = document.createElement('div');
+  item.className = 'det-item';
+  const now = new Date();
+  const t = [now.getHours(), now.getMinutes(), now.getSeconds()].map(v=>String(v).padStart(2,'0')).join(':');
+  item.innerHTML = `
+    <span class="det-icon">${icon}</span>
+    <div class="det-info">
+      <div class="det-name">${name}</div>
+      <div class="det-sub">${sub}</div>
+    </div>
+    <span class="det-conf ${type}">${type.toUpperCase()}</span>
+    <span class="det-time">${t}</span>
+  `;
+  list.insertBefore(item, list.firstChild);
+  while (list.children.length > 20) list.removeChild(list.lastChild);
+}
+
+// ═══════════════════════════════════════
+// EVENT LOG
+// ═══════════════════════════════════════
+let activeFilter = 'all';
+
+function logEvent(type, isMobility) {
+  const now = new Date();
+  const crossTime = isMobility
+    ? getSettingVal('r-default-time',20) + getSettingVal('r-mobility-ext',15)
+    : getSettingVal('r-default-time',20);
+
+  if (type === 'walk') {
+    statCrossed++;
+    document.getElementById('stat-crossed').textContent = statCrossed;
+    crossTimes.push(crossTime);
+    const avg = Math.round(crossTimes.reduce((a,b)=>a+b,0)/crossTimes.length);
+    document.getElementById('stat-avgtime').textContent = avg+'s';
+  }
+
+  const entry = {
+    time: [now.getHours(),now.getMinutes(),now.getSeconds()].map(v=>String(v).padStart(2,'0')).join(':'),
+    date: now.toLocaleDateString(),
+    type: type === 'jaywalk' ? 'jaywalk' : isMobility ? 'mobility' : 'normal',
+    persons: Math.floor(Math.random()*3)+1,
+    crossTime: type === 'jaywalk' ? '—' : crossTime + 's',
+    conf: (75 + Math.floor(Math.random()*20)) + '%',
+    notes: type === 'jaywalk' ? 'Crossed on red phase' : isMobility ? 'Extended time applied' : 'Normal crossing'
+  };
+  eventLog.unshift(entry);
+  renderLog();
+}
+
+function renderLog() {
+  const tbody = document.getElementById('log-tbody');
+  const filtered = activeFilter === 'all' ? eventLog : eventLog.filter(e => e.type === activeFilter);
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:40px">No events yet</td></tr>';
+    return;
+  }
+  const typeInfo = {
+    normal: ['pill-normal','🚶 Normal'],
+    mobility: ['pill-mobility','🦽 Mobility Aid'],
+    jaywalk: ['pill-jaywalk','⚠️ Jaywalker'],
+    timeout: ['pill-timeout','⏱ Timeout'],
+  };
+  tbody.innerHTML = filtered.slice(0,200).map(e => {
+    const [cls, label] = typeInfo[e.type] || ['pill-normal', e.type];
+    return `<tr>
+      <td class="log-mono">${e.date} ${e.time}</td>
+      <td><span class="log-type-pill ${cls}">${label}</span></td>
+      <td>${e.persons}</td>
+      <td class="log-mono">${e.crossTime}</td>
+      <td class="log-mono">${e.conf}</td>
+      <td style="color:var(--muted)">${e.notes}</td>
+    </tr>`;
+  }).join('');
+}
+
+function filterLog(f, el) {
+  activeFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderLog();
+}
+
+function exportLog() {
+  const headers = ['Date','Time','Type','Persons','CrossTime','Confidence','Notes'];
+  const rows = eventLog.map(e=>[e.date,e.time,e.type,e.persons,e.crossTime,e.conf,e.notes]);
+  const csv = [headers, ...rows].map(r=>r.join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'smartcross-log.csv';
+  a.click();
+}
+
+// ═══════════════════════════════════════
+// CROSSWALK ZONE EDITOR
+// ═══════════════════════════════════════
+const zoneColors = {
+  crosswalk: { fill:'rgba(34,197,94,0.15)', stroke:'rgba(34,197,94,0.8)' },
+  wait: { fill:'rgba(59,130,246,0.15)', stroke:'rgba(59,130,246,0.8)' },
+  line: { fill: null, stroke:'rgba(245,158,11,0.9)' }
+};
+
+let zoneShapes = [];
+let currentTool = 'crosswalk';
+let drawing = false;
+let startX = 0, startY = 0;
+let selectedZone = null;
+let dragStart = null;
+
+function setTool(t, el) {
+  currentTool = t;
+  document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function clearZones() {
+  zoneShapes = [];
+  renderZoneCanvas();
+  updateZoneCount();
+}
+
+function updateZoneCount() {
+  document.getElementById('zone-count').textContent = zoneShapes.length + ' zone' + (zoneShapes.length!==1?'s':'') + ' defined';
+}
+
+function renderZoneCanvas() {
+  const canvas = document.getElementById('crosswalk-canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Background road sketch
+  ctx.fillStyle = '#1a1e28';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Road lanes
+  ctx.fillStyle = '#252932';
+  ctx.fillRect(0, 80, canvas.width, 190);
+
+  // Lane markings
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([30, 20]);
+  ctx.beginPath();
+  ctx.moveTo(0, 175); ctx.lineTo(canvas.width, 175);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Sidewalks
+  ctx.fillStyle = '#1e2230';
+  ctx.fillRect(0, 0, canvas.width, 80);
+  ctx.fillRect(0, 270, canvas.width, 80);
+
+  // Curb lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.moveTo(0,80); ctx.lineTo(canvas.width, 80);
+  ctx.moveTo(0,270); ctx.lineTo(canvas.width, 270);
+  ctx.stroke();
+
+  // Labels
+  ctx.fillStyle = 'rgba(255,255,255,0.2)';
+  ctx.font = '11px DM Mono, monospace';
+  ctx.fillText('SIDEWALK', 10, 50);
+  ctx.fillText('ROAD', 10, 170);
+  ctx.fillText('SIDEWALK', 10, 310);
+
+  // Draw zones
+  zoneShapes.forEach((z, idx) => {
+    const c = zoneColors[z.type];
+    ctx.save();
+    if (z.type === 'line') {
+      ctx.strokeStyle = c.stroke;
+      ctx.lineWidth = 3;
+      ctx.setLineDash([]);
+      ctx.shadowColor = c.stroke;
+      ctx.shadowBlur = 4;
+      ctx.beginPath();
+      ctx.moveTo(z.x, z.y);
+      ctx.lineTo(z.x2, z.y2);
+      ctx.stroke();
+      // Arrows
+      const angle = Math.atan2(z.y2-z.y, z.x2-z.x);
+      const mx = (z.x+z.x2)/2, my = (z.y+z.y2)/2;
+      ctx.beginPath();
+      ctx.moveTo(mx, my);
+      ctx.lineTo(mx - 10*Math.cos(angle-0.4), my - 10*Math.sin(angle-0.4));
+      ctx.moveTo(mx, my);
+      ctx.lineTo(mx - 10*Math.cos(angle+0.4), my - 10*Math.sin(angle+0.4));
+      ctx.stroke();
+    } else {
+      ctx.fillStyle = c.fill;
+      ctx.strokeStyle = selectedZone === idx ? '#fff' : c.stroke;
+      ctx.lineWidth = selectedZone === idx ? 2 : 1.5;
+      ctx.setLineDash(selectedZone === idx ? [] : [6,4]);
+      ctx.shadowColor = c.stroke;
+      ctx.shadowBlur = selectedZone === idx ? 8 : 3;
+      ctx.fillRect(z.x, z.y, z.w, z.h);
+      ctx.strokeRect(z.x, z.y, z.w, z.h);
+      // Label
+      ctx.fillStyle = c.stroke;
+      ctx.font = '10px DM Mono, monospace';
+      ctx.setLineDash([]);
+      ctx.shadowBlur = 0;
+      ctx.fillText(z.type.toUpperCase(), z.x+5, z.y+14);
+    }
+    ctx.restore();
+  });
+}
+
+const zCanvas = document.getElementById('crosswalk-canvas');
+
+zCanvas.addEventListener('mousedown', e => {
+  const r = zCanvas.getBoundingClientRect();
+  const scaleX = zCanvas.width / r.width;
+  const scaleY = zCanvas.height / r.height;
+  startX = (e.clientX - r.left) * scaleX;
+  startY = (e.clientY - r.top) * scaleY;
+  drawing = true;
+
+  if (currentTool === 'select') {
+    selectedZone = null;
+    for (let i = zoneShapes.length-1; i >= 0; i--) {
+      const z = zoneShapes[i];
+      if (z.type !== 'line' && startX >= z.x && startX <= z.x+z.w && startY >= z.y && startY <= z.y+z.h) {
+        selectedZone = i;
+        dragStart = { mx: startX, my: startY, zx: z.x, zy: z.y };
+        break;
+      }
+    }
+    renderZoneCanvas();
+  }
+});
+
+zCanvas.addEventListener('mousemove', e => {
+  if (!drawing) return;
+  const r = zCanvas.getBoundingClientRect();
+  const scaleX = zCanvas.width / r.width;
+  const scaleY = zCanvas.height / r.height;
+  const cx = (e.clientX - r.left) * scaleX;
+  const cy = (e.clientY - r.top) * scaleY;
+
+  if (currentTool === 'select' && selectedZone !== null && dragStart) {
+    zoneShapes[selectedZone].x = dragStart.zx + (cx - dragStart.mx);
+    zoneShapes[selectedZone].y = dragStart.zy + (cy - dragStart.my);
+    renderZoneCanvas();
+    return;
+  }
+
+  renderZoneCanvas();
+  const ctx = zCanvas.getContext('2d');
+  if (currentTool === 'line') {
+    ctx.strokeStyle = zoneColors.line.stroke;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4,4]);
+    ctx.beginPath();
+    ctx.moveTo(startX, startY);
+    ctx.lineTo(cx, cy);
+    ctx.stroke();
+  } else {
+    const col = zoneColors[currentTool] || zoneColors.crosswalk;
+    ctx.fillStyle = col.fill;
+    ctx.strokeStyle = col.stroke;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([6,4]);
+    ctx.fillRect(startX, startY, cx-startX, cy-startY);
+    ctx.strokeRect(startX, startY, cx-startX, cy-startY);
+  }
+});
+
+zCanvas.addEventListener('mouseup', e => {
+  if (!drawing) return;
+  drawing = false;
+  dragStart = null;
+  const r = zCanvas.getBoundingClientRect();
+  const scaleX = zCanvas.width / r.width;
+  const scaleY = zCanvas.height / r.height;
+  const ex = (e.clientX - r.left) * scaleX;
+  const ey = (e.clientY - r.top) * scaleY;
+
+  if (currentTool === 'select') return;
+
+  if (Math.abs(ex-startX) < 5 && Math.abs(ey-startY) < 5) return;
+
+  if (currentTool === 'line') {
+    zoneShapes.push({ type:'line', x:startX, y:startY, x2:ex, y2:ey });
+  } else {
+    zoneShapes.push({ type:currentTool, x:Math.min(startX,ex), y:Math.min(startY,ey), w:Math.abs(ex-startX), h:Math.abs(ey-startY) });
+  }
+  renderZoneCanvas();
+  updateZoneCount();
+});
+
+zCanvas.addEventListener('dblclick', e => {
+  const r = zCanvas.getBoundingClientRect();
+  const scaleX = zCanvas.width / r.width;
+  const scaleY = zCanvas.height / r.height;
+  const cx = (e.clientX - r.left) * scaleX;
+  const cy = (e.clientY - r.top) * scaleY;
+  zoneShapes = zoneShapes.filter(z => {
+    if (z.type === 'line') return true;
+    return !(cx>=z.x && cx<=z.x+z.w && cy>=z.y && cy<=z.y+z.h);
+  });
+  renderZoneCanvas();
+  updateZoneCount();
+});
+
+renderZoneCanvas();
+
+// ═══════════════════════════════════════
+// SAVE SETTINGS
+// ═══════════════════════════════════════
+function saveSettings() {
+  showToast('✅ Settings saved successfully', '#22c55e');
+}
+
+// ═══════════════════════════════════════
+// SEED SOME DEMO LOG DATA
+// ═══════════════════════════════════════
+function seedLog() {
+  const types = ['normal','normal','normal','mobility','jaywalk','normal','mobility','normal'];
+  types.forEach((t, i) => {
+    const d = new Date(Date.now() - (types.length-i)*4*60000);
+    const ct = t === 'mobility' ? 35 : t === 'jaywalk' ? null : 20;
+    eventLog.push({
+      time: [d.getHours(),d.getMinutes(),d.getSeconds()].map(v=>String(v).padStart(2,'0')).join(':'),
+      date: d.toLocaleDateString(),
+      type: t,
+      persons: Math.floor(Math.random()*3)+1,
+      crossTime: ct ? ct+'s' : '—',
+      conf: (78+Math.floor(Math.random()*17))+'%',
+      notes: t==='jaywalk'?'Crossed on red phase':t==='mobility'?'Extended time applied':'Normal crossing'
+    });
+    if (t==='normal'||t==='mobility') { statCrossed++; crossTimes.push(ct); }
+    if (t==='jaywalk') statJay++;
+    if (t==='mobility') statMobility++;
+  });
+  document.getElementById('stat-crossed').textContent = statCrossed;
+  document.getElementById('stat-jay').textContent = statJay;
+  document.getElementById('stat-mobility').textContent = statMobility;
+  const avg = Math.round(crossTimes.reduce((a,b)=>a+b,0)/crossTimes.length);
+  document.getElementById('stat-avgtime').textContent = avg+'s';
+  renderLog();
+}
+
+seedLog();
+loadModel();
+</script>
+</body>
+</html>
