@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SmartCross — Intelligent Crosswalk System</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/tensorflow/4.10.0/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2/dist/coco-ssd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -674,6 +674,155 @@ input[type=range] {
 .zone-legend-item { display:flex; align-items:center; gap:5px; }
 .zone-dot { width:10px; height:10px; border-radius:50%; }
 
+.sim-view-option-active { border-color: var(--accent) !important; background: rgba(245,166,35,0.06) !important; }
+
+/* ══════════════════════════════════════
+══════════════════════════════════════ */
+#page-sim {
+  flex-direction: row;
+  overflow: hidden;
+  background: var(--bg);
+}
+.sim-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+#sim-canvas {
+  flex: 1;
+  display: block;
+  width: 100%;
+  min-height: 0;
+  background: #0a0c10;
+  cursor: default;
+}
+.sim-bottom-bar {
+  height: 52px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 10px;
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+.sim-bottom-bar::-webkit-scrollbar { display:none; }
+.sim-section-label {
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.sim-divider { width:1px; height:24px; background:var(--border); flex-shrink:0; }
+.sim-sidebar {
+  width: 260px;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.sim-sidebar-section {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.sim-signal-display {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px;
+  background: var(--surface2);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+.sim-light-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  background: #111;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+.sim-bulb {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+  transition: all 0.3s;
+}
+.sim-bulb.red.on   { background: #ef4444; box-shadow: 0 0 10px #ef4444; }
+.sim-bulb.yellow.on{ background: #f59e0b; box-shadow: 0 0 10px #f59e0b; }
+.sim-bulb.green.on { background: #22c55e; box-shadow: 0 0 10px #22c55e; }
+.sim-ped-signal { flex:1; text-align:center; }
+.sim-ped-icon { font-size: 2rem; }
+.sim-ped-icon.walk { animation: walkAnim 0.5s infinite alternate; }
+.sim-countdown {
+  font-family: var(--font-mono);
+  font-size: 1.6rem;
+  font-weight: 500;
+  line-height: 1;
+  margin-top: 4px;
+}
+.sim-phase-tag {
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 3px;
+  margin-top: 5px;
+  display: inline-block;
+}
+.phase-tag-go   { background: rgba(34,197,94,0.15); color: var(--go); }
+.phase-tag-stop { background: rgba(239,68,68,0.15); color: var(--stop); }
+.phase-tag-warn { background: rgba(245,158,11,0.15); color: var(--warn); }
+.sim-car-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.72rem;
+  margin-bottom: 5px;
+}
+.sim-car-color { width:14px; height:10px; border-radius:2px; flex-shrink:0; }
+.sim-car-label { flex:1; }
+.sim-car-speed { font-family:var(--font-mono); font-size:0.66rem; color:var(--muted); }
+.sim-car-state { font-size:0.62rem; padding:1px 6px; border-radius:10px; }
+.state-moving { background:rgba(34,197,94,0.12); color:var(--go); }
+.state-stopped { background:rgba(239,68,68,0.12); color:var(--stop); }
+.state-slowing { background:rgba(245,158,11,0.12); color:var(--warn); }
+.sim-queue-bar-wrap { display:flex; align-items:center; gap:6px; margin-bottom:4px; }
+.sim-queue-label { font-size:0.68rem; color:var(--muted); min-width:18px; }
+.sim-queue-bar { flex:1; height:8px; background:var(--surface2); border-radius:4px; overflow:hidden; }
+.sim-queue-fill { height:100%; border-radius:4px; transition:width 0.4s ease; }
+.sim-event-list {
+  flex:1;
+  overflow-y:auto;
+  padding: 8px 16px;
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+  min-height:0;
+}
+.sim-event-list::-webkit-scrollbar { width:3px; }
+.sim-event-list::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.08); }
+.sim-evt { font-size:0.68rem; color:var(--muted); display:flex; gap:6px; line-height:1.4; }
+.sim-evt-time { font-family:var(--font-mono); color:rgba(255,255,255,0.2); flex-shrink:0; font-size:0.6rem; }
+.sim-evt.highlight { color:var(--text); }
+.sim-evt.go-evt { color:var(--go); }
+.sim-evt.stop-evt { color:var(--stop); }
+.sim-evt.warn-evt { color:var(--warn); }
+
 /* ══════════════════════════════════════
    ANNOUNCEMENT TOAST
 ══════════════════════════════════════ */
@@ -703,6 +852,34 @@ input[type=range] {
 #announcement-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 #announcement-toast .toast-icon { font-size: 1.2rem; }
 
+/* ── Pedestrian Waiting Cue (shown during vehicle green) ── */
+#ped-waiting-cue {
+  position: absolute;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: none;
+  align-items: center;
+  gap: 8px;
+  background: rgba(245,166,35,0.12);
+  border: 1px solid rgba(245,166,35,0.5);
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--accent);
+  pointer-events: none;
+  animation: pwcPulse 1.5s ease-in-out infinite;
+  backdrop-filter: blur(6px);
+  z-index: 10;
+}
+@keyframes pwcPulse {
+  0%,100%{box-shadow:0 0 0 0 rgba(245,166,35,0)} 50%{box-shadow:0 0 0 6px rgba(245,166,35,0.15)}
+}
+.pwc-icon { font-size: 1.1rem; }
+.pwc-count { font-family: var(--font-mono); font-size: 1rem; color: #fff; font-weight: 700; }
+.pwc-label { opacity: 0.85; }
+
 </style>
 </head>
 <body>
@@ -715,6 +892,9 @@ input[type=range] {
   </div>
   <div class="nav-tab" data-page="log" onclick="switchPage('log',this)">
     📋 Event Log
+  </div>
+  <div class="nav-tab" data-page="sim" onclick="switchPage('sim',this); setTimeout(()=>{if(!simRunning){document.getElementById('sim-toggle-btn').click();}},150)">
+    🚗 Traffic Sim
   </div>
   <div class="nav-tab" data-page="admin" onclick="switchPage('admin',this)">
     ⚙️ Admin Settings
@@ -739,6 +919,12 @@ input[type=range] {
         <div class="cam-rec"><div class="rec-dot"></div> LIVE</div>
         <div class="cam-info" id="cam-info">INITIALIZING…</div>
         <div class="cam-fps" id="cam-fps">-- FPS</div>
+        <!-- Pedestrian waiting cue (shown during vehicle green when peds detected) -->
+        <div id="ped-waiting-cue">
+          <span class="pwc-icon">👁</span>
+          <span class="pwc-count">0</span>
+          <span class="pwc-label">pedestrian(s) waiting — reducing green timer</span>
+        </div>
       </div>
 
       <!-- Signal overlay bottom center -->
@@ -791,6 +977,14 @@ input[type=range] {
         </div>
         <span id="voice-text" style="font-size:0.72rem; color:var(--muted)">No speech</span>
       </div>
+      <select id="camera-select" style="
+        background:var(--surface2); border:1px solid var(--border); border-radius:6px;
+        color:var(--text); font-family:var(--font-body); font-size:0.75rem;
+        padding:6px 10px; cursor:pointer; max-width:220px; outline:none;
+      ">
+        <option value="">📷 Default Camera</option>
+      </select>
+      <button class="btn" id="refresh-cams-btn" onclick="enumerateCameras()" title="Refresh camera list" style="padding:6px 10px; font-size:0.8rem;">⟳</button>
       <button class="btn primary" id="start-btn" onclick="startCamera()">▶ Start Camera</button>
       <button class="btn danger" id="stop-btn" onclick="stopCamera()" disabled>■ Stop</button>
       <button class="btn" onclick="triggerCrossNow()">🚶 Trigger Cross</button>
@@ -883,6 +1077,107 @@ input[type=range] {
   </div>
 </div>
 
+<!-- ═══════════ PAGE: SIMULATION ═══════════ -->
+<div class="page" id="page-sim">
+  <div class="sim-main">
+    <canvas id="sim-canvas"></canvas>
+    <div class="sim-bottom-bar">
+      <span class="sim-section-label">Traffic Flow</span>
+      <button class="btn primary" id="sim-toggle-btn" onclick="toggleSim()">▶ Start Simulation</button>
+      <button class="btn" onclick="spawnCarManual('horizontal')">+ Spawn Car (EW)</button>
+      <button class="btn" onclick="spawnCarManual('vertical')">+ Spawn Car (NS)</button>
+      <div class="sim-divider"></div>
+      <span class="sim-section-label">Speed</span>
+      <input type="range" min="0.3" max="3" step="0.1" value="1" id="sim-speed-slider" oninput="simSpeed=parseFloat(this.value); document.getElementById('sim-speed-val').textContent=this.value+'×'">
+      <span id="sim-speed-val" style="font-family:var(--font-mono);font-size:0.72rem;min-width:30px">1×</span>
+      <div class="sim-divider"></div>
+      <span class="sim-section-label">Density</span>
+      <input type="range" min="1" max="5" step="1" value="2" id="sim-density" oninput="document.getElementById('sim-density-val').textContent=['Low','Med-Low','Medium','Med-High','High'][this.value-1]">
+      <span id="sim-density-val" style="font-size:0.72rem;color:var(--muted);min-width:60px">Med-Low</span>
+      <div class="sim-divider"></div>
+      <button class="btn" onclick="triggerCrossNow(); addSimEvent('🚶 Manual pedestrian crossing triggered','highlight')">🚶 Trigger Cross</button>
+    </div>
+  </div>
+
+  <!-- Right sidebar -->
+  <div class="sim-sidebar">
+    <div class="sim-sidebar-section">
+      <div class="section-label" style="margin-bottom:10px">Signal Status</div>
+      <div class="sim-signal-display">
+        <div class="sim-light-stack">
+          <div style="font-size:0.5rem;color:rgba(255,255,255,0.3);letter-spacing:.08em;margin-bottom:3px">VEH</div>
+          <div class="sim-bulb red" id="sbulb-red"></div>
+          <div class="sim-bulb yellow" id="sbulb-yellow"></div>
+          <div class="sim-bulb green" id="sbulb-green"></div>
+        </div>
+        <div class="sim-ped-signal">
+          <div class="sim-ped-icon" id="sim-ped-icon">🛑</div>
+          <div class="sim-countdown" id="sim-countdown">--</div>
+          <div class="sim-phase-tag phase-tag-stop" id="sim-phase-tag">Vehicle Green</div>
+        </div>
+        <div class="sim-light-stack">
+          <div style="font-size:0.5rem;color:rgba(255,255,255,0.3);letter-spacing:.08em;margin-bottom:3px">VEH</div>
+          <div class="sim-bulb red" id="sbulb-red2"></div>
+          <div class="sim-bulb yellow" id="sbulb-yellow2"></div>
+          <div class="sim-bulb green" id="sbulb-green2"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sim-sidebar-section">
+      <div class="section-label" style="margin-bottom:10px">Queue Length</div>
+      <div id="sim-queue-display">
+        <div class="sim-queue-bar-wrap">
+          <span class="sim-queue-label">→</span>
+          <div class="sim-queue-bar"><div class="sim-queue-fill" id="q-east" style="width:0%;background:#3b82f6"></div></div>
+          <span style="font-family:var(--font-mono);font-size:0.65rem;min-width:16px" id="q-east-n">0</span>
+        </div>
+        <div class="sim-queue-bar-wrap">
+          <span class="sim-queue-label">←</span>
+          <div class="sim-queue-bar"><div class="sim-queue-fill" id="q-west" style="width:0%;background:#8b5cf6"></div></div>
+          <span style="font-family:var(--font-mono);font-size:0.65rem;min-width:16px" id="q-west-n">0</span>
+        </div>
+        <div class="sim-queue-bar-wrap">
+          <span class="sim-queue-label">↓</span>
+          <div class="sim-queue-bar"><div class="sim-queue-fill" id="q-south" style="width:0%;background:#f5a623"></div></div>
+          <span style="font-family:var(--font-mono);font-size:0.65rem;min-width:16px" id="q-south-n">0</span>
+        </div>
+        <div class="sim-queue-bar-wrap">
+          <span class="sim-queue-label">↑</span>
+          <div class="sim-queue-bar"><div class="sim-queue-fill" id="q-north" style="width:0%;background:#22c55e"></div></div>
+          <span style="font-family:var(--font-mono);font-size:0.65rem;min-width:16px" id="q-north-n">0</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sim-sidebar-section" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px">
+        <div style="font-family:var(--font-mono);font-size:1.3rem;color:var(--go)" id="sim-stat-passed">0</div>
+        <div style="font-size:0.66rem;color:var(--muted)">Cars Passed</div>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px">
+        <div style="font-family:var(--font-mono);font-size:1.3rem;color:var(--warn)" id="sim-stat-stopped">0</div>
+        <div style="font-size:0.66rem;color:var(--muted)">Total Stops</div>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px">
+        <div style="font-family:var(--font-mono);font-size:1.3rem;color:var(--blue)" id="sim-stat-avgwait">0s</div>
+        <div style="font-size:0.66rem;color:var(--muted)">Avg Wait</div>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px">
+        <div style="font-family:var(--font-mono);font-size:1.3rem;color:var(--accent)" id="sim-stat-active">0</div>
+        <div style="font-size:0.66rem;color:var(--muted)">Active Cars</div>
+      </div>
+    </div>
+
+    <div class="sim-sidebar-section" style="flex-shrink:0">
+      <div class="section-label" style="margin-bottom:8px">Simulation Log</div>
+    </div>
+    <div class="sim-event-list" id="sim-event-list">
+      <div class="sim-evt" style="color:var(--muted);text-align:center;padding:10px">Start simulation to begin</div>
+    </div>
+  </div>
+</div>
+
 <!-- ═══════════ PAGE: ADMIN ═══════════ -->
 <div class="page" id="page-admin">
   <div class="admin-nav">
@@ -891,6 +1186,7 @@ input[type=range] {
     <div class="admin-nav-item" onclick="switchAdminPanel('voice',this)">🔊 Voice / Alerts</div>
     <div class="admin-nav-item" onclick="switchAdminPanel('zones',this)">📐 Crossing Zones</div>
     <div class="admin-nav-item" onclick="switchAdminPanel('signals',this)">🚦 Signal Config</div>
+    <div class="admin-nav-item" onclick="switchAdminPanel('simview',this)">🗺 Simulation View</div>
   </div>
 
   <div class="admin-content">
@@ -1105,11 +1401,11 @@ input[type=range] {
     <!-- ZONES -->
     <div class="admin-panel" id="panel-zones">
       <div class="admin-h1">Crossing Zones</div>
-      <div class="admin-sub">Define crossing lines and detection zones by drag-and-dropping on the canvas</div>
+      <div class="admin-sub">Define detection zones on the street-level camera view. The horizon line divides the pavement (top) from the road (bottom). Jaywalker detection triggers when a person enters the road region during a red phase.</div>
 
       <div class="crosswalk-editor">
         <div class="crosswalk-editor-header">
-          <span style="font-size:0.78rem; font-weight:500">Zone Editor — Intersection View</span>
+          <span style="font-size:0.78rem; font-weight:500">Zone Editor — Street-Level View</span>
           <span style="font-size:0.7rem; color:var(--muted)" id="zone-count">0 zones defined</span>
         </div>
         <canvas id="crosswalk-canvas" width="800" height="350"></canvas>
@@ -1200,6 +1496,49 @@ input[type=range] {
       </div>
     </div>
 
+    <!-- SIMULATION VIEW -->
+    <div class="admin-panel" id="panel-simview">
+      <div class="admin-h1">Simulation View</div>
+      <div class="admin-sub">Choose how the traffic simulation is displayed — intersection view, single road, or side-on street view</div>
+
+      <div class="settings-group">
+        <div class="settings-group-title">Road Layout</div>
+        <div class="setting-row" style="align-items:flex-start; flex-direction:column; gap:14px; padding:16px">
+          <div style="display:flex; flex-direction:column; gap:10px; width:100%">
+            <label style="display:flex; align-items:center; gap:12px; cursor:pointer; padding:12px 14px; background:var(--surface2); border:2px solid var(--border); border-radius:8px; transition:border-color 0.2s" id="view-opt-intersection" onclick="setSimView('intersection')">
+              <input type="radio" name="sim-view" value="intersection" checked style="accent-color:var(--accent);width:16px;height:16px">
+              <div>
+                <div style="font-weight:500;font-size:0.85rem;margin-bottom:2px">🚦 Intersection (Default)</div>
+                <div style="font-size:0.72rem;color:var(--muted)">4-way intersection with EW and NS roads. Both axes active.</div>
+              </div>
+            </label>
+            <label style="display:flex; align-items:center; gap:12px; cursor:pointer; padding:12px 14px; background:var(--surface2); border:2px solid var(--border); border-radius:8px; transition:border-color 0.2s" id="view-opt-horizontal" onclick="setSimView('horizontal')">
+              <input type="radio" name="sim-view" value="horizontal" style="accent-color:var(--accent);width:16px;height:16px">
+              <div>
+                <div style="font-weight:500;font-size:0.85rem;margin-bottom:2px">↔ Horizontal Road Only</div>
+                <div style="font-size:0.72rem;color:var(--muted)">Single horizontal road with crosswalk. East/West traffic only.</div>
+              </div>
+            </label>
+            <label style="display:flex; align-items:center; gap:12px; cursor:pointer; padding:12px 14px; background:var(--surface2); border:2px solid var(--border); border-radius:8px; transition:border-color 0.2s" id="view-opt-vertical" onclick="setSimView('vertical')">
+              <input type="radio" name="sim-view" value="vertical" style="accent-color:var(--accent);width:16px;height:16px">
+              <div>
+                <div style="font-weight:500;font-size:0.85rem;margin-bottom:2px">↕ Vertical Road Only</div>
+                <div style="font-size:0.72rem;color:var(--muted)">Single vertical road with crosswalk. North/South traffic only.</div>
+              </div>
+            </label>
+            <label style="display:flex; align-items:center; gap:12px; cursor:pointer; padding:12px 14px; background:var(--surface2); border:2px solid var(--border); border-radius:8px; transition:border-color 0.2s" id="view-opt-sideon" onclick="setSimView('sideon')">
+              <input type="radio" name="sim-view" value="sideon" style="accent-color:var(--accent);width:16px;height:16px">
+              <div>
+                <div style="font-weight:500;font-size:0.85rem;margin-bottom:2px">🏙 Side-On Street View</div>
+                <div style="font-size:0.72rem;color:var(--muted)">View from the pavement — cars pass left to right, pedestrian waits at kerb.</div>
+              </div>
+            </label>
+          </div>
+          <div style="font-size:0.72rem;color:var(--muted);margin-top:4px">Changes take effect immediately. Simulation will restart with the new view.</div>
+        </div>
+      </div>
+    </div>
+
   </div><!-- /admin-content -->
 </div>
 
@@ -1220,7 +1559,7 @@ let running = false;
 let lastFpsTime = 0;
 let frameCount = 0;
 
-let crossingPhase = 'vehicle-green'; // vehicle-green | yellow | pedestrian-walk | pedestrian-warn | pedestrian-end
+let crossingPhase = 'ew-green'; // ew-green | ew-yellow | ns-green | ns-yellow | pedestrian-walk | pedestrian-warn
 let phaseTimer = 0;
 let phaseMax = 45;
 let countdownTimer = null;
@@ -1228,6 +1567,10 @@ let crossingTime = 20;
 let mobilityDetected = false;
 let warnTriggered = false;
 let lastSpeech = '';
+
+// Front-on crosswalk view column boundaries (fraction of frame width)
+const CW_LEFT_FRAC  = 0.33; // left kerb edge
+const CW_RIGHT_FRAC = 0.67; // right kerb edge
 
 // Stats
 let statCrossed = 0, statJay = 0, statMobility = 0;
@@ -1269,10 +1612,12 @@ function toggleSetting(el) {
 // TRAFFIC LIGHT + PHASE ENGINE
 // ═══════════════════════════════════════
 const PHASES = {
-  'vehicle-green': { duration: () => getSettingVal('r-green-phase', 45), next: 'yellow' },
-  'yellow':        { duration: () => getSettingVal('r-yellow-phase', 4), next: 'pedestrian-walk' },
+  'ew-green':       { duration: () => getSettingVal('r-green-phase', 45), next: 'ew-yellow' },
+  'ew-yellow':      { duration: () => getSettingVal('r-yellow-phase', 4), next: 'ns-green' },
+  'ns-green':       { duration: () => getSettingVal('r-green-phase', 45), next: 'ns-yellow' },
+  'ns-yellow':      { duration: () => getSettingVal('r-yellow-phase', 4), next: 'pedestrian-walk' },
   'pedestrian-walk':{ duration: () => getCrossingTime(), next: 'pedestrian-warn' },
-  'pedestrian-warn':{ duration: () => getSettingVal('r-warn-start', 7), next: 'vehicle-green' },
+  'pedestrian-warn':{ duration: () => getSettingVal('r-warn-start', 7), next: 'ew-green' },
 };
 
 function getSettingVal(id, def) {
@@ -1317,23 +1662,31 @@ function tickPhase() {
 }
 
 function updateLights() {
-  const lights = { red: false, yellow: false, green: false };
-  const walkOn = crossingPhase === 'pedestrian-walk';
-  const warnOn = crossingPhase === 'pedestrian-warn';
+  const vGreen  = crossingPhase === 'ew-green' || crossingPhase === 'ns-green';
+  const vYellow = crossingPhase === 'ew-yellow' || crossingPhase === 'ns-yellow';
+  const vRed    = !vGreen && !vYellow;
 
-  if (crossingPhase === 'vehicle-green') { lights.green = true; }
-  else if (crossingPhase === 'yellow')   { lights.yellow = true; }
-  else                                   { lights.red = true; }
-
-  ['red','yellow','green'].forEach(c => {
-    document.getElementById('light-'+c).classList.toggle('on', lights[c]);
-    document.getElementById('light-'+c+'2').classList.toggle('on', lights[c]);
+  // Update all 4 vehicle light elements (2 on live monitor, 2 on sim sidebar)
+  const lightIds = ['light-red','light-yellow','light-green','light-red2','light-yellow2','light-green2'];
+  lightIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (id.includes('red'))    el.classList.toggle('on', vRed);
+    if (id.includes('yellow')) el.classList.toggle('on', vYellow);
+    if (id.includes('green'))  el.classList.toggle('on', vGreen);
   });
 
+  // Pedestrian walk icon
   const walkIcon = document.getElementById('walk-icon');
-  if (walkOn) { walkIcon.textContent = '🚶'; walkIcon.className = 'walk-icon walk'; }
-  else if (warnOn) { walkIcon.textContent = '🚷'; walkIcon.className = 'walk-icon dont-walk'; }
-  else { walkIcon.textContent = '🛑'; walkIcon.className = 'walk-icon dont-walk'; }
+  if (!walkIcon) return;
+  if (crossingPhase === 'pedestrian-walk') {
+    walkIcon.textContent = '🚶'; walkIcon.className = 'walk-icon walk';
+  } else if (crossingPhase === 'pedestrian-warn') {
+    walkIcon.textContent = '🚷'; walkIcon.className = 'walk-icon dont-walk';
+  } else {
+    // vehicle-green or yellow → do not walk
+    walkIcon.textContent = '🛑'; walkIcon.className = 'walk-icon dont-walk';
+  }
 }
 
 function updateTimerUI() {
@@ -1362,8 +1715,10 @@ function updateTimerUI() {
 
 function updatePhaseUI() {
   const labels = {
-    'vehicle-green': 'Vehicle Green',
-    'yellow': 'Transitioning',
+    'ew-green':        'EW Green',
+    'ew-yellow':       'EW Yellow',
+    'ns-green':        'NS Green',
+    'ns-yellow':       'NS Yellow',
     'pedestrian-walk': 'Walk Signal',
     'pedestrian-warn': 'Warning Phase',
   };
@@ -1383,20 +1738,38 @@ function onPhaseStart(phase) {
   } else if (phase === 'pedestrian-warn') {
     speak('warn');
     showToast('⚠️ Signal changing soon!', '#f59e0b');
-  } else if (phase === 'vehicle-green') {
+  } else if (phase === 'ew-green' || phase === 'ns-green') {
     speak('stop');
   }
+  // Fire sim hook if available
+  if (typeof simPhaseHook === 'function') simPhaseHook(phase);
 }
 
 function triggerCrossNow() {
-  if (crossingPhase === 'vehicle-green') {
-    clearInterval(countdownTimer);
-    setPhase('yellow');
+  clearInterval(countdownTimer);
+  if (crossingPhase === 'pedestrian-walk' || crossingPhase === 'pedestrian-warn') {
+    // Already in pedestrian phase — nothing to do
+    showToast('🚶 Walk signal already active', '#f5a623');
+    return;
+  }
+  // Always transition through yellow first (1s), then to pedestrian-walk
+  // This prevents cars from teleporting mid-intersection
+  const needsYellow = crossingPhase === 'ew-green' || crossingPhase === 'ns-green';
+  if (needsYellow) {
+    const yellowPhase = crossingPhase === 'ew-green' ? 'ew-yellow' : 'ns-yellow';
+    setPhase(yellowPhase);
+    // Override yellow timer to be brief (2s) for the manual trigger
+    phaseTimer = 2;
+    phaseMax = 2;
+    updateTimerUI();
+    showToast('🖐 Manual crossing — clearing traffic…', '#f5a623');
+  } else {
+    setPhase('pedestrian-walk');
     showToast('🖐 Manual crossing triggered', '#f5a623');
   }
 }
 
-setPhase('vehicle-green');
+setPhase('ew-green');
 
 // ═══════════════════════════════════════
 // CAMERA & DETECTION
@@ -1414,19 +1787,70 @@ async function loadModel() {
   }
 }
 
+async function enumerateCameras() {
+  const sel = document.getElementById('camera-select');
+  const prevVal = sel.value;
+  try {
+    // Need at least a temporary permission grant to get device labels
+    const tmp = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+    tmp.getTracks().forEach(t => t.stop());
+  } catch(e) { /* permission denied — labels may be blank */ }
+
+  const devices = await navigator.mediaDevices.enumerateDevices();
+  const cameras = devices.filter(d => d.kind === 'videoinput');
+
+  sel.innerHTML = '<option value="">📷 Default Camera</option>';
+  cameras.forEach((cam, i) => {
+    const opt = document.createElement('option');
+    opt.value = cam.deviceId;
+    opt.textContent = cam.label || `Camera ${i + 1}`;
+    // Highlight likely iPhone/external cameras
+    if (/iphone|continuity|epoccam|droidcam|ivcam|nddi/i.test(cam.label)) {
+      opt.textContent = '📱 ' + opt.textContent;
+    } else if (i > 0) {
+      opt.textContent = '🎥 ' + opt.textContent;
+    }
+    sel.appendChild(opt);
+  });
+
+  // Restore previous selection if still available
+  if ([...sel.options].some(o => o.value === prevVal)) sel.value = prevVal;
+
+  showToast(`📷 Found ${cameras.length} camera${cameras.length !== 1 ? 's' : ''}`, '#3b82f6');
+}
+
 async function startCamera() {
   try {
-    stream = await navigator.mediaDevices.getUserMedia({ video: { width:1280, height:720 }, audio:false });
+    const deviceId = document.getElementById('camera-select').value;
+    const videoConstraints = deviceId
+      ? { deviceId: { exact: deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }
+      : { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'environment' };
+
+    stream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: false });
     const video = document.getElementById('video');
     video.srcObject = stream;
     await video.play();
     running = true;
     document.getElementById('start-btn').disabled = true;
     document.getElementById('stop-btn').disabled = false;
-    document.getElementById('cam-info').textContent = 'SMARTCROSS // DETECTION ACTIVE';
+    document.getElementById('camera-select').disabled = true;
+    document.getElementById('refresh-cams-btn').disabled = true;
+
+    // Show active camera name in the overlay
+    const track = stream.getVideoTracks()[0];
+    const label = track.label || 'Camera';
+    document.getElementById('cam-info').textContent = `SMARTCROSS // ${label.toUpperCase().substring(0, 40)}`;
+
+    // Refresh the dropdown list with real labels now we have permission
+    enumerateCameras().then(() => {
+      if (deviceId) document.getElementById('camera-select').value = deviceId;
+      document.getElementById('camera-select').disabled = true;
+    });
+
     detect();
   } catch(e) {
-    showToast('❌ Camera access denied', '#ef4444');
+    showToast('❌ Camera access denied or device not found', '#ef4444');
+    console.error(e);
   }
 }
 
@@ -1438,12 +1862,19 @@ function stopCamera() {
   canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
   document.getElementById('start-btn').disabled = false;
   document.getElementById('stop-btn').disabled = true;
+  document.getElementById('camera-select').disabled = false;
+  document.getElementById('refresh-cams-btn').disabled = false;
   document.getElementById('cam-info').textContent = 'CAMERA STOPPED';
 }
 
 let lastDetectionLog = 0;
 let lastMobilityCheck = 0;
 let prevPersonCount = 0;
+// Pedestrian tracking: track active walkers so we don't re-log the same person each frame
+let trackedPedestrians = []; // [{id, bbox, lastSeen, logged}]
+let pedIdCounter = 0;
+const PED_MATCH_DIST = 80;   // px - how close a detection must be to count as same person
+const PED_EXPIRY_MS  = 3000; // remove track if unseen for this long
 
 async function detect() {
   if (!running) return;
@@ -1468,12 +1899,12 @@ async function detect() {
     const persons = predictions.filter(p => p.class === 'person' &&
       p.score * 100 >= getSettingVal('r-person-thresh', 55));
 
-    // Mobility detection (using 'sports ball' or 'umbrella' as proxy for cane — in reality use custom model)
+    // Mobility detection — require actual object detection (no random triggers)
+    // Uses coco-ssd proxies: umbrella (cane proxy), handbag/backpack near person
     const mobilityObjs = predictions.filter(p =>
-      ['sports ball','umbrella','handbag','backpack'].includes(p.class));
-    // Simulate: randomly flag some sessions as mobility aid with low frequency
-    const hasMobility = mobilityObjs.length > 0 || (Math.random() < 0.003);
-    if (hasMobility && now - lastMobilityCheck > 5000) {
+      ['umbrella', 'handbag', 'backpack', 'suitcase'].includes(p.class) && p.score > 0.55);
+    const hasMobility = mobilityObjs.length > 0 && persons.length > 0;
+    if (hasMobility && now - lastMobilityCheck > 8000) {
       mobilityDetected = true;
       lastMobilityCheck = now;
       setTimeout(() => { mobilityDetected = false; }, 20000);
@@ -1484,6 +1915,32 @@ async function detect() {
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    // Draw column guides for front-on crosswalk view
+    const cwColL = canvas.width * CW_LEFT_FRAC;
+    const cwColR = canvas.width * CW_RIGHT_FRAC;
+    ctx.save();
+    // Crosswalk column tint
+    ctx.fillStyle = 'rgba(34,197,94,0.04)';
+    ctx.fillRect(cwColL, 0, cwColR - cwColL, canvas.height);
+    // Left divider line
+    ctx.strokeStyle = 'rgba(59,130,246,0.4)';
+    ctx.lineWidth = 1.5; ctx.setLineDash([10, 7]);
+    ctx.beginPath(); ctx.moveTo(cwColL, 0); ctx.lineTo(cwColL, canvas.height); ctx.stroke();
+    // Right divider line
+    ctx.beginPath(); ctx.moveTo(cwColR, 0); ctx.lineTo(cwColR, canvas.height); ctx.stroke();
+    ctx.setLineDash([]);
+    // Labels
+    ctx.font = '10px DM Mono, monospace';
+    ctx.fillStyle = 'rgba(59,130,246,0.55)';
+    ctx.textAlign = 'center';
+    ctx.fillText('WAIT', cwColL / 2, 14);
+    ctx.fillStyle = 'rgba(34,197,94,0.55)';
+    ctx.fillText('CROSSWALK', cwColL + (cwColR - cwColL) / 2, 14);
+    ctx.fillStyle = 'rgba(59,130,246,0.55)';
+    ctx.fillText('WAIT', cwColR + (canvas.width - cwColR) / 2, 14);
+    ctx.textAlign = 'left';
+    ctx.restore();
+
     // Draw crossing zone overlay (from settings)
     drawZoneOverlay(ctx, canvas.width, canvas.height);
 
@@ -1491,7 +1948,14 @@ async function detect() {
       const [x,y,w,h] = pred.bbox;
       const conf = Math.round(pred.score * 100);
       const isMobility = mobilityDetected && i === 0;
-      const isJay = crossingPhase === 'vehicle-green' && phaseTimer < phaseMax - 5;
+
+      // Front-on: person is a jaywalker if their centre X is in the crosswalk column during vehicle green
+      const personCenterX = x + w / 2;
+      const cwColLeft  = canvas.width * CW_LEFT_FRAC;
+      const cwColRight = canvas.width * CW_RIGHT_FRAC;
+      const isInCrosswalk = personCenterX >= cwColLeft && personCenterX <= cwColRight;
+      const isVehicleGreenNow = crossingPhase === 'ew-green' || crossingPhase === 'ns-green';
+      const isJay = isVehicleGreenNow && isInCrosswalk;
 
       const color = isJay ? '#ef4444' : isMobility ? '#3b82f6' : '#22c55e';
 
@@ -1523,33 +1987,107 @@ async function detect() {
       ctx.fillText(`${label}  ${conf}%`, x+6, y-6);
     });
 
-    // Log detections periodically
-    if (persons.length > 0 && now - lastDetectionLog > 2000) {
-      lastDetectionLog = now;
-      const type = mobilityDetected ? 'mobility' : 'normal';
-      addDetectionItem(mobilityDetected?'🦽':'🚶', `${persons.length} Person(s)`,
-        `Conf: ${Math.round(persons.reduce((s,p)=>s+p.score,0)/persons.length*100)}%`, type);
-    }
+    // ── PEDESTRIAN TRACKER ──
+    // Update existing tracks and match to new detections
+    const nowMs = now; // performance.now() already in ms
+    // Mark all tracks as unseen this frame
+    trackedPedestrians.forEach(t => t.seenThisFrame = false);
 
-    // Jaywalker check
-    if (persons.length > 0 && crossingPhase === 'vehicle-green' && isToggleOn('t-jay-log')) {
-      if (now - lastDetectionLog > 5000) {
-        const delay = getSettingVal('r-jay-buffer', 3);
-        if (phaseTimer < phaseMax - delay) {
-          statJay++;
-          document.getElementById('stat-jay').textContent = statJay;
-          addDetectionItem('⚠️', 'Jaywalker', 'Crossing on red', 'jay');
-          logEvent('jaywalk', false);
-          showToast('⚠️ Jaywalker detected!', '#ef4444');
-        }
+    persons.forEach((pred) => {
+      const [bx, by, bw2, bh2] = pred.bbox;
+      const pcx = bx + bw2/2, pcy = by + bh2/2;
+      // Find closest existing track
+      let best = null, bestDist = PED_MATCH_DIST;
+      trackedPedestrians.forEach(t => {
+        const d = Math.hypot(t.cx - pcx, t.cy - pcy);
+        if (d < bestDist) { bestDist = d; best = t; }
+      });
+      if (best) {
+        // Update existing track
+        best.cx = pcx; best.cy = pcy;
+        best.lastSeen = nowMs;
+        best.seenThisFrame = true;
+        best.conf = pred.score;
+      } else {
+        // New pedestrian
+        const ped = { id: pedIdCounter++, cx: pcx, cy: pcy, lastSeen: nowMs, seenThisFrame: true, conf: pred.score, loggedNormal: false, loggedJay: false };
+        trackedPedestrians.push(ped);
+        // Log new pedestrian arrival once
+        const type = mobilityDetected ? 'mobility' : 'normal';
+        addDetectionItem(mobilityDetected?'🦽':'🚶', `Pedestrian #${ped.id+1}`,
+          `Conf: ${Math.round(pred.score*100)}%`, type);
       }
+    });
+
+    // Expire stale tracks
+    trackedPedestrians = trackedPedestrians.filter(t => nowMs - t.lastSeen < PED_EXPIRY_MS);
+
+    // ── JAYWALKER CHECK (front-on camera: person in crosswalk column during red) ──
+    // Camera faces crosswalk straight on. Three horizontal columns:
+    //   Left pavement  : cx < canvas.width * CW_LEFT_FRAC
+    //   Crosswalk      : CW_LEFT_FRAC ≤ cx ≤ CW_RIGHT_FRAC  ← jaywalking if vehicle green
+    //   Right pavement : cx > canvas.width * CW_RIGHT_FRAC
+    // If a custom crosswalk zone is drawn in Admin, its X bounds override the defaults.
+    const isVehicleGreen = crossingPhase === 'ew-green' || crossingPhase === 'ns-green';
+    if (isVehicleGreen && isToggleOn('t-jay-log')) {
+      const delay = getSettingVal('r-jay-buffer', 3);
+      const cwZone = zoneShapes.find(z => z.type === 'crosswalk');
+      let jayLeft, jayRight;
+      if (cwZone) {
+        const scaleX = canvas.width / 800;
+        jayLeft  = cwZone.x * scaleX;
+        jayRight = (cwZone.x + cwZone.w) * scaleX;
+      } else {
+        jayLeft  = canvas.width  * CW_LEFT_FRAC;
+        jayRight = canvas.width  * CW_RIGHT_FRAC;
+      }
+      trackedPedestrians.forEach(ped => {
+        if (ped.loggedJay || !ped.seenThisFrame || phaseTimer >= phaseMax - delay) return;
+        // Person must be horizontally inside the crosswalk column
+        if (ped.cx < jayLeft || ped.cx > jayRight) return;
+        ped.loggedJay = true;
+        statJay++;
+        document.getElementById('stat-jay').textContent = statJay;
+        addDetectionItem('⚠️', 'Jaywalker', 'In crosswalk on red', 'jay');
+        logEvent('jaywalk', false);
+        showToast('⚠️ Jaywalker in crosswalk — yellow alert triggered.', '#ef4444');
+        clearInterval(countdownTimer);
+        const nextYellow = crossingPhase === 'ew-green' ? 'ew-yellow' : 'ns-yellow';
+        setPhase(nextYellow);
+      });
     }
 
-    // Smart queue trigger
-    if (isToggleOn('t-smart-queue') && persons.length >= 3 &&
-        crossingPhase === 'vehicle-green' && phaseTimer < phaseMax - 5) {
-      triggerCrossNow();
+    // ── PEDESTRIAN WAITING VISUAL CUE (during car green) ──
+    updatePedWaitingCue(trackedPedestrians.length, isVehicleGreen);
+
+function updatePedWaitingCue(pedCount, isVehicleGreen) {
+  let cueEl = document.getElementById('ped-waiting-cue');
+  if (!cueEl) return;
+  if (!isVehicleGreen) { cueEl.style.display = 'none'; return; }
+
+  // Only count people standing in the wait zones (left or right pavement columns)
+  // i.e. NOT already in the crosswalk — those are jaywalkers, handled separately
+  const cw = document.getElementById('canvas');
+  const canvasW = cw ? cw.width : 1280;
+  const cwL = canvasW * CW_LEFT_FRAC;
+  const cwR = canvasW * CW_RIGHT_FRAC;
+  const waitingCount = trackedPedestrians.filter(p =>
+    p.seenThisFrame && (p.cx < cwL || p.cx > cwR)
+  ).length;
+
+  if (waitingCount > 0) {
+    cueEl.style.display = 'flex';
+    cueEl.querySelector('.pwc-count').textContent = waitingCount;
+    // Smart wait reduction: 2+ people waiting, shorten the green
+    if (isToggleOn('t-smart-queue') && waitingCount >= 2 && phaseTimer > 8) {
+      phaseTimer = Math.max(6, Math.floor(phaseTimer * 0.4));
+      updateTimerUI();
+      showToast(`👀 ${waitingCount} pedestrian(s) waiting — green time reduced`, '#f5a623');
     }
+  } else {
+    cueEl.style.display = 'none';
+  }
+}
 
     // Update voice bars based on detection activity
     updateVoiceBars(persons.length > 0);
@@ -1778,45 +2316,137 @@ function updateZoneCount() {
 function renderZoneCanvas() {
   const canvas = document.getElementById('crosswalk-canvas');
   const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
 
-  // Background road sketch
-  ctx.fillStyle = '#1a1e28';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  // ── Front-on crosswalk view ──
+  // Camera faces the crosswalk straight-on.
+  // Left third = left pavement/wait area
+  // Middle third = crosswalk / road
+  // Right third = right pavement/wait area
 
-  // Road lanes
-  ctx.fillStyle = '#252932';
-  ctx.fillRect(0, 80, canvas.width, 190);
+  const cwL = W * CW_LEFT_FRAC;
+  const cwR = W * CW_RIGHT_FRAC;
 
-  // Lane markings
-  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
-  ctx.lineWidth = 2;
-  ctx.setLineDash([30, 20]);
+  // Sky at top ~35%
+  const skyH = Math.round(H * 0.35);
+  const skyGrad = ctx.createLinearGradient(0, 0, 0, skyH);
+  skyGrad.addColorStop(0, '#0c0e16'); skyGrad.addColorStop(1, '#141825');
+  ctx.fillStyle = skyGrad;
+  ctx.fillRect(0, 0, W, skyH);
+
+  // Buildings left side — behind left pavement
+  const leftBldgs = [
+    {x:0,   w:70, h:100}, {x:80,  w:50, h:80 }, {x:140, w:80, h:120},
+  ];
+  leftBldgs.forEach(b => {
+    ctx.fillStyle = '#11151e';
+    ctx.fillRect(b.x, skyH - b.h, Math.min(b.w, cwL - b.x), b.h);
+    ctx.fillStyle = 'rgba(255,240,120,0.06)';
+    for (let wy = skyH - b.h + 10; wy < skyH - 10; wy += 16)
+      for (let wx = b.x + 6; wx < b.x + b.w - 8 && wx < cwL - 4; wx += 12)
+        if ((wx+wy) % 24 < 12) ctx.fillRect(wx, wy, 7, 9);
+  });
+  // Buildings right side
+  const rightBldgs = [
+    {x:cwR+10, w:70, h:110}, {x:cwR+100, w:60, h:85}, {x:cwR+170, w:90, h:130},
+  ];
+  rightBldgs.forEach(b => {
+    ctx.fillStyle = '#11151e';
+    ctx.fillRect(b.x, skyH - b.h, b.w, b.h);
+    ctx.fillStyle = 'rgba(255,240,120,0.06)';
+    for (let wy = skyH - b.h + 10; wy < skyH - 10; wy += 16)
+      for (let wx = b.x + 6; wx < b.x + b.w - 8; wx += 12)
+        if ((wx+wy) % 24 < 12) ctx.fillRect(wx, wy, 7, 9);
+  });
+
+  // Distant road visible above crosswalk (road recedes into distance at top of road section)
+  const roadTopY = skyH;
+  const roadBotY = H;
+  ctx.fillStyle = '#1c2030';
+  ctx.fillRect(cwL, roadTopY, cwR - cwL, roadBotY - roadTopY);
+
+  // Left pavement
+  const pavGrad = ctx.createLinearGradient(0, roadTopY, 0, roadBotY);
+  pavGrad.addColorStop(0, '#1a1e2c'); pavGrad.addColorStop(1, '#1e2234');
+  ctx.fillStyle = pavGrad;
+  ctx.fillRect(0, roadTopY, cwL, roadBotY - roadTopY);
+
+  // Right pavement
+  ctx.fillStyle = pavGrad;
+  ctx.fillRect(cwR, roadTopY, W - cwR, roadBotY - roadTopY);
+
+  // Pavement texture tiles
+  ctx.fillStyle = 'rgba(255,255,255,0.02)';
+  const tile = 28;
+  for (let tx = 0; tx < cwL; tx += tile*2)
+    for (let ty = roadTopY; ty < roadBotY; ty += tile*2) {
+      ctx.fillRect(tx, ty, tile, tile);
+      ctx.fillRect(tx+tile, ty+tile, tile, tile);
+    }
+  for (let tx = cwR; tx < W; tx += tile*2)
+    for (let ty = roadTopY; ty < roadBotY; ty += tile*2) {
+      ctx.fillRect(tx, ty, tile, tile);
+      ctx.fillRect(tx+tile, ty+tile, tile, tile);
+    }
+
+  // Kerb lines (vertical edges of crosswalk)
+  ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+  ctx.lineWidth = 2; ctx.setLineDash([]);
   ctx.beginPath();
-  ctx.moveTo(0, 175); ctx.lineTo(canvas.width, 175);
+  ctx.moveTo(cwL, roadTopY); ctx.lineTo(cwL, roadBotY);
+  ctx.moveTo(cwR, roadTopY); ctx.lineTo(cwR, roadBotY);
   ctx.stroke();
-  ctx.setLineDash([]);
 
-  // Sidewalks
-  ctx.fillStyle = '#1e2230';
-  ctx.fillRect(0, 0, canvas.width, 80);
-  ctx.fillRect(0, 270, canvas.width, 80);
+  // Zebra crosswalk stripes (horizontal bands across the road column)
+  ctx.fillStyle = 'rgba(255,255,255,0.15)';
+  const nStripes = 7;
+  const stripeH = (roadBotY - roadTopY) / (nStripes * 2 - 1);
+  for (let s = 0; s < nStripes; s++) {
+    ctx.fillRect(cwL + 2, roadTopY + s * stripeH * 2, cwR - cwL - 4, stripeH);
+  }
 
-  // Curb lines
-  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
-  ctx.lineWidth = 2;
-  ctx.setLineDash([]);
-  ctx.beginPath();
-  ctx.moveTo(0,80); ctx.lineTo(canvas.width, 80);
-  ctx.moveTo(0,270); ctx.lineTo(canvas.width, 270);
-  ctx.stroke();
+  // Road lane direction arrows (subtle, going left→right in crossing zone)
+  ctx.fillStyle = 'rgba(255,255,255,0.06)';
+  ctx.font = 'bold 28px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('→', cwL + (cwR-cwL)*0.5, roadTopY + (roadBotY-roadTopY)*0.35);
+  ctx.fillText('←', cwL + (cwR-cwL)*0.5, roadTopY + (roadBotY-roadTopY)*0.65);
+  ctx.textAlign = 'left';
+
+  // Traffic light pole — right kerb edge
+  const tlx = cwR + 18, tly = roadTopY + 10;
+  ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 3; ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(tlx, tly + 80); ctx.lineTo(tlx, tly); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(tlx, tly); ctx.lineTo(tlx - 18, tly); ctx.stroke();
+  // Housing
+  const isGreen  = crossingPhase === 'ew-green' || crossingPhase === 'ns-green';
+  const isYellow = crossingPhase === 'ew-yellow' || crossingPhase === 'ns-yellow';
+  const isRed    = !isGreen && !isYellow;
+  ctx.fillStyle = '#111'; ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.roundRect(tlx - 26, tly - 2, 14, 28, 2); ctx.fill(); ctx.stroke();
+  [{c: isRed?'#ef4444':'rgba(239,68,68,0.12)', g:isRed?'#ef4444':null, oy:4},
+   {c: isYellow?'#f59e0b':'rgba(245,158,11,0.12)', g:isYellow?'#f59e0b':null, oy:12},
+   {c: isGreen?'#22c55e':'rgba(34,197,94,0.12)',  g:isGreen?'#22c55e':null, oy:20}
+  ].forEach(b => {
+    if (b.g) { ctx.shadowColor = b.g; ctx.shadowBlur = 7; }
+    ctx.fillStyle = b.c;
+    ctx.beginPath(); ctx.arc(tlx - 19, tly + b.oy, 4, 0, Math.PI*2); ctx.fill();
+    ctx.shadowBlur = 0;
+  });
 
   // Labels
-  ctx.fillStyle = 'rgba(255,255,255,0.2)';
-  ctx.font = '11px DM Mono, monospace';
-  ctx.fillText('SIDEWALK', 10, 50);
-  ctx.fillText('ROAD', 10, 170);
-  ctx.fillText('SIDEWALK', 10, 310);
+  ctx.fillStyle = 'rgba(255,255,255,0.22)';
+  ctx.font = '10px DM Mono, monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('WAIT ZONE', cwL / 2, roadTopY + 22);
+  ctx.fillText('CROSSWALK', cwL + (cwR - cwL) / 2, roadTopY + 22);
+  ctx.fillText('WAIT ZONE', cwR + (W - cwR) / 2, roadTopY + 22);
+  ctx.fillStyle = 'rgba(255,255,255,0.1)';
+  ctx.fillText('◀ LEFT PAVEMENT', cwL / 2, H - 12);
+  ctx.fillText('ROAD ↕', cwL + (cwR - cwL) / 2, H - 12);
+  ctx.fillText('RIGHT PAVEMENT ▶', cwR + (W - cwR) / 2, H - 12);
+  ctx.textAlign = 'left';
 
   // Draw zones
   zoneShapes.forEach((z, idx) => {
@@ -1996,8 +2626,1072 @@ function seedLog() {
   renderLog();
 }
 
+// TRAFFIC SIMULATION ENGINE
+// ═══════════════════════════════════════
+
+const simCanvas = document.getElementById('sim-canvas');
+const simCtx = simCanvas.getContext('2d');
+let simRunning = false;
+let simSpeed = 1.0;
+let simAnimId = null;
+let simLastTime = 0;
+let simCars = [];
+let simCarIdCounter = 0;
+let simStatPassed = 0;
+let simStatStopped = 0;
+let simWaitTimes = [];
+let simSpawnTimer = 0;
+let simEvtList = [];
+
+// Colors for cars
+const CAR_COLORS = [
+  '#3b82f6','#8b5cf6','#f5a623','#22c55e','#ef4444',
+  '#06b6d4','#ec4899','#f59e0b','#10b981','#6366f1'
+];
+
+// Car config
+const CAR_W = 28, CAR_H = 16;
+const ROAD_W = 90; // total road width (2 lanes × 45)
+const LANE_W = 45;
+const STOP_MARGIN = 14; // px before stop line
+
+function getSimDimensions() {
+  const r = simCanvas.getBoundingClientRect();
+  return { w: simCanvas.width, h: simCanvas.height, cx: simCanvas.width/2, cy: simCanvas.height/2 };
+}
+
+// ─── LANE CENTERS (car.x/y is the CENTER of the car) ───
+// EW road occupies cy-ROAD_W/2 to cy+ROAD_W/2
+//   East lane (heading right): center = cy - ROAD_W/4   (top half center)
+//   West lane (heading left):  center = cy + ROAD_W/4   (bottom half center)
+// NS road occupies cx-ROAD_W/2 to cx+ROAD_W/2
+//   South lane (heading down): center = cx - ROAD_W/4   (left half center)
+//   North lane (heading up):   center = cx + ROAD_W/4   (right half center)
+function getLaneCenter(dir) {
+  const { cx, cy, h, w } = getSimDimensions();
+  if (simViewMode === 'sideon') {
+    const roadTop = h * 0.62;
+    const laneH   = 46;
+    if (dir === 'east')  return roadTop + laneH/2;          // top lane y-center
+    if (dir === 'west')  return roadTop + laneH + laneH/2;  // bottom lane y-center
+    // sideon only has EW — NS shouldn't spawn, but safe fallback
+    if (dir === 'south') return cx - ROAD_W/4;
+    if (dir === 'north') return cx + ROAD_W/4;
+  }
+  if (simViewMode === 'horizontal') {
+    // Single horizontal road — only EW lanes
+    if (dir === 'east')  return cy - ROAD_W/4;
+    if (dir === 'west')  return cy + ROAD_W/4;
+    if (dir === 'south') return cx - ROAD_W/4;
+    if (dir === 'north') return cx + ROAD_W/4;
+  }
+  if (simViewMode === 'vertical') {
+    // Single vertical road — only NS lanes
+    if (dir === 'east')  return cy - ROAD_W/4;
+    if (dir === 'west')  return cy + ROAD_W/4;
+    if (dir === 'south') return cx - ROAD_W/4;
+    if (dir === 'north') return cx + ROAD_W/4;
+  }
+  // Default intersection mode
+  if (dir === 'east')  return cy - ROAD_W/4;
+  if (dir === 'west')  return cy + ROAD_W/4;
+  if (dir === 'south') return cx - ROAD_W/4;
+  if (dir === 'north') return cx + ROAD_W/4;
+}
+
+// Spawn a new car
+function spawnCar(dir, laneIndex) {
+  // Guard: don't spawn NS cars in EW-only views, or EW cars in vertical view
+  if ((simViewMode === 'horizontal' || simViewMode === 'sideon') && (dir === 'north' || dir === 'south')) return;
+  if (simViewMode === 'vertical' && (dir === 'east' || dir === 'west')) return;
+
+  const { w, h, cx, cy } = getSimDimensions();
+
+  const laneCenter = getLaneCenter(dir);
+  const off = 80;
+  let sx, sy;
+  if (dir === 'east')  { sx = -off;  sy = laneCenter; }  // laneCenter = y pos for EW
+  if (dir === 'west')  { sx = w+off; sy = laneCenter; }
+  if (dir === 'south') { sx = laneCenter; sy = -off;  }  // laneCenter = x pos for NS
+  if (dir === 'north') { sx = laneCenter; sy = h+off; }
+
+  // Don't spawn if another car is too close to the entry point
+  const tooClose = simCars.some(c => {
+    if (c.dir !== dir) return false;
+    const d = Math.abs((dir==='east'||dir==='west') ? c.x - sx : c.y - sy);
+    return d < 70;
+  });
+  if (tooClose) return;
+
+  const car = {
+    id: simCarIdCounter++,
+    dir,
+    color: CAR_COLORS[simCarIdCounter % CAR_COLORS.length],
+    speed: (1.5 + Math.random()*0.6) * 60, // px/sec base speed
+    currentSpeed: (1.5 + Math.random()*0.6) * 60,
+    state: 'moving',
+    waitTime: 0,
+    hasWaited: false,
+    x: sx, y: sy,
+  };
+
+  simCars.push(car);
+}
+
+function spawnCarManual(axis) {
+  if (simViewMode === 'horizontal' || simViewMode === 'sideon') {
+    // These views only have EW road — only spawn EW cars regardless of button pressed
+    spawnCar(Math.random()<0.5?'east':'west', 0);
+  } else if (simViewMode === 'vertical') {
+    // Vertical view only has NS road
+    spawnCar(Math.random()<0.5?'north':'south', 0);
+  } else if (axis === 'horizontal') {
+    spawnCar(Math.random()<0.5?'east':'west', 0);
+  } else {
+    spawnCar(Math.random()<0.5?'north':'south', 0);
+  }
+}
+
+// ── SIMULATION VIEW MODE ──
+let simViewMode = 'intersection'; // 'intersection' | 'horizontal' | 'vertical' | 'sideon'
+
+function setSimView(mode) {
+  simViewMode = mode;
+  ['intersection','horizontal','vertical','sideon'].forEach(m => {
+    const opt = document.getElementById('view-opt-' + m);
+    if (opt) {
+      opt.classList.toggle('sim-view-option-active', m === mode);
+      const radio = opt.querySelector('input[type=radio]');
+      if (radio) radio.checked = (m === mode);
+    }
+  });
+  simCars = [];
+  if (mode === 'horizontal' || mode === 'sideon') {
+    setPhase('ew-green');
+    addSimEvent((mode === 'sideon' ? '🏙 Side-On' : '↔ Horizontal') + ' view active', 'highlight');
+  } else if (mode === 'vertical') {
+    setPhase('ns-green');
+    addSimEvent('↕ Vertical Road view active', 'highlight');
+  } else {
+    setPhase('ew-green');
+    addSimEvent('🚦 Intersection view active', 'highlight');
+  }
+}
+
+function autoSpawn() {
+  const density = parseInt(document.getElementById('sim-density')?.value||2);
+  const interval = [8,5,3.5,2.5,1.5][density-1];
+  simSpawnTimer += 1/60 * simSpeed;
+  if (simSpawnTimer >= interval) {
+    simSpawnTimer = 0;
+    if (simViewMode === 'horizontal' || simViewMode === 'sideon') {
+      spawnCar(Math.random()<0.5?'east':'west', 0);
+    } else if (simViewMode === 'vertical') {
+      spawnCar(Math.random()<0.5?'north':'south', 0);
+    } else {
+      const dirs = ['east','west','north','south'];
+      spawnCar(dirs[Math.floor(Math.random()*4)], 0);
+    }
+  }
+}
+
+// Stop line offset from intersection edge: crosswalk gap + crosswalk width + gap before stop line
+const STOP_LINE_OFFSET = 4 + (5 * (6 + 5) - 5) + 8; // = 4 + 50 + 8 = 62px
+
+function getStopLine(dir) {
+  const { cx, cy } = getSimDimensions();
+  // In intersection mode cars stop beyond the intersection box (ROAD_W/2 from center) plus crosswalk
+  // In single-road/sideon modes the crosswalk is centered at cx/cy directly
+  const boxOffset = (simViewMode === 'intersection') ? ROAD_W/2 : 0;
+  switch(dir) {
+    case 'east':  return cx - boxOffset - STOP_LINE_OFFSET;
+    case 'west':  return cx + boxOffset + STOP_LINE_OFFSET;
+    case 'north': return cy + boxOffset + STOP_LINE_OFFSET;
+    case 'south': return cy - boxOffset - STOP_LINE_OFFSET;
+  }
+}
+
+function carShouldStop(car) {
+  const isEW = car.dir === 'east' || car.dir === 'west';
+  // In single-road or sideon modes only ped phases stop traffic
+  if (simViewMode === 'horizontal' || simViewMode === 'sideon' || simViewMode === 'vertical') {
+    return crossingPhase === 'pedestrian-walk' || crossingPhase === 'pedestrian-warn';
+  }
+  // Intersection mode — each axis stops when the other has green, or during ped phases
+  if (isEW) {
+    return crossingPhase === 'ns-green' || crossingPhase === 'ns-yellow' ||
+           crossingPhase === 'pedestrian-walk' || crossingPhase === 'pedestrian-warn';
+  }
+  // NS cars
+  return crossingPhase === 'ew-green' || crossingPhase === 'ew-yellow' ||
+         crossingPhase === 'pedestrian-walk' || crossingPhase === 'pedestrian-warn';
+}
+
+function isCarPastStopLine(car) {
+  const sl = getStopLine(car.dir);
+  if (car.dir === 'east')  return car.x > sl;
+  if (car.dir === 'west')  return car.x < sl;
+  if (car.dir === 'north') return car.y < sl;
+  if (car.dir === 'south') return car.y > sl;
+}
+
+function distToStopLine(car) {
+  const sl = getStopLine(car.dir);
+  if (car.dir === 'east')  return sl - car.x;
+  if (car.dir === 'west')  return car.x - sl;
+  if (car.dir === 'north') return car.y - sl;
+  if (car.dir === 'south') return sl - car.y;
+}
+
+function isCarOffscreen(car) {
+  const { w, h } = getSimDimensions();
+  const margin = 80;
+  return car.x < -margin || car.x > w+margin || car.y < -margin || car.y > h+margin;
+}
+
+function updateCars(dt) {
+  const CAR_LEN = 36; // length of car body along travel axis
+  const MIN_GAP = 10; // minimum gap between cars (bumper to bumper)
+  const FOLLOW_DIST = CAR_LEN + MIN_GAP; // headway target
+
+  for (let i = simCars.length - 1; i >= 0; i--) {
+    const car = simCars[i];
+
+    // ── 1. STOP LINE CONSTRAINT ──
+    const shouldStopAtLine = carShouldStop(car);
+    const pastStop = isCarPastStopLine(car);
+    const distSL = distToStopLine(car);
+
+    // ── 2. CAR-FOLLOWING CONSTRAINT ──
+    // Find the nearest car ahead in the same direction (same lane)
+    let distAhead = Infinity;
+    for (let j = 0; j < simCars.length; j++) {
+      if (i === j) continue;
+      const other = simCars[j];
+      if (other.dir !== car.dir) continue;
+      // "Ahead" means further along the direction of travel
+      let gap;
+      if (car.dir === 'east')  gap = other.x - car.x;
+      if (car.dir === 'west')  gap = car.x - other.x;
+      if (car.dir === 'south') gap = other.y - car.y;
+      if (car.dir === 'north') gap = car.y - other.y;
+      if (gap > 0 && gap < distAhead) distAhead = gap;
+    }
+    // Effective gap = distance to front bumper of car ahead
+    const gapAhead = distAhead - CAR_LEN;
+
+    // ── 3. COMPUTE DESIRED SPEED ──
+    let desiredSpeed = car.speed;
+
+    // Slow for car ahead
+    if (gapAhead < FOLLOW_DIST * 3) {
+      // Smooth deceleration curve
+      desiredSpeed = Math.min(desiredSpeed, car.speed * Math.max(0, (gapAhead - MIN_GAP) / (FOLLOW_DIST * 2)));
+    }
+    if (gapAhead <= MIN_GAP) {
+      desiredSpeed = 0;
+    }
+
+    // Slow for stop line (if red and not already past it)
+    if (shouldStopAtLine && !pastStop) {
+      const brakeZone = car.speed * 1.6;
+      if (distSL < brakeZone) {
+        const stopFactor = Math.max(0, (distSL - 1) / brakeZone);
+        desiredSpeed = Math.min(desiredSpeed, car.speed * stopFactor);
+      }
+      if (distSL <= 1) desiredSpeed = 0;
+    }
+
+    // ── 4. SMOOTH SPEED TOWARDS DESIRED ──
+    const accel = desiredSpeed > car.currentSpeed ? car.speed * 1.5 : car.speed * 3.0;
+    if (car.currentSpeed < desiredSpeed) {
+      car.currentSpeed = Math.min(desiredSpeed, car.currentSpeed + accel * dt);
+    } else {
+      car.currentSpeed = Math.max(desiredSpeed, car.currentSpeed - accel * dt);
+    }
+
+    // ── 5. CLAMP: don't creep past stop line when red ──
+    if (shouldStopAtLine && !pastStop && distSL < 2) {
+      car.currentSpeed = 0;
+      // hard-stop exactly at line
+      const sl = getStopLine(car.dir);
+      if (car.dir === 'east')  car.x = Math.min(car.x, sl);
+      if (car.dir === 'west')  car.x = Math.max(car.x, sl);
+      if (car.dir === 'north') car.y = Math.max(car.y, sl);
+      if (car.dir === 'south') car.y = Math.min(car.y, sl);
+    }
+
+    // ── 6. UPDATE STATE FOR DISPLAY ──
+    car.state = car.currentSpeed < 1 ? 'stopped' : car.currentSpeed < car.speed * 0.5 ? 'slowing' : 'moving';
+
+    // Track wait time
+    if (car.state === 'stopped') {
+      car.waitTime += dt;
+      if (!car.hasWaited) {
+        car.hasWaited = true;
+        simStatStopped++;
+        document.getElementById('sim-stat-stopped').textContent = simStatStopped;
+      }
+    } else if (car.state === 'moving' && car.hasWaited && car.waitTime > 0) {
+      simWaitTimes.push(car.waitTime);
+      car.waitTime = 0;
+      if (simWaitTimes.length > 50) simWaitTimes.shift();
+      const avg = Math.round(simWaitTimes.reduce((a,b)=>a+b,0)/simWaitTimes.length);
+      document.getElementById('sim-stat-avgwait').textContent = avg + 's';
+    }
+
+    // ── 7. LOCK Y (EW cars) or X (NS cars) to lane center ──
+    const lc = getLaneCenter(car.dir);
+    if (car.dir === 'east' || car.dir === 'west') car.y = lc;
+    else car.x = lc;
+
+    // ── 8. MOVE ──
+    const move = car.currentSpeed * dt;
+    if (car.dir === 'east')  car.x += move;
+    if (car.dir === 'west')  car.x -= move;
+    if (car.dir === 'south') car.y += move;
+    if (car.dir === 'north') car.y -= move;
+
+    // ── 9. REMOVE OFFSCREEN ──
+    if (isCarOffscreen(car)) {
+      simCars.splice(i, 1);
+      simStatPassed++;
+      document.getElementById('sim-stat-passed').textContent = simStatPassed;
+    }
+  }
+
+  // Update sidebar stats
+  document.getElementById('sim-stat-active').textContent = simCars.length;
+  const queues = { east:0, west:0, north:0, south:0 };
+  simCars.forEach(c => { if (c.state !== 'moving') queues[c.dir]++; });
+  const maxQ = 6;
+  ['east','west','north','south'].forEach(d => {
+    const n = queues[d];
+    document.getElementById('q-'+d).style.width = Math.min(100, n/maxQ*100) + '%';
+    document.getElementById('q-'+d+'-n').textContent = n;
+  });
+}
+
+function drawRoad() {
+  const { w, h, cx, cy } = getSimDimensions();
+  const ctx = simCtx;
+
+  // Background city blocks
+  ctx.fillStyle = '#0e1118';
+  ctx.fillRect(0, 0, w, h);
+
+  // Pavement checker tiles (sidewalk areas only — avoid road zones)
+  ctx.fillStyle = '#131720';
+  const tile = 36;
+  for (let bx = 0; bx < w; bx += tile*2) {
+    for (let by = 0; by < h; by += tile*2) {
+      ctx.fillRect(bx, by, tile, tile);
+      ctx.fillRect(bx+tile, by+tile, tile, tile);
+    }
+  }
+
+  // ── ROAD SURFACES ──
+  const RW = ROAD_W; // 90px
+  ctx.fillStyle = '#22263a';
+  // Horizontal road (EW)
+  ctx.fillRect(0, cy - RW/2, w, RW);
+  // Vertical road (NS)
+  ctx.fillRect(cx - RW/2, 0, RW, h);
+  // Intersection (slightly lighter)
+  ctx.fillStyle = '#272b3f';
+  ctx.fillRect(cx - RW/2, cy - RW/2, RW, RW);
+
+  // ── LANE DIVIDERS (dashed yellow center lines) ──
+  ctx.strokeStyle = 'rgba(255,210,40,0.5)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([18, 14]);
+  ctx.beginPath();
+  // Horizontal center line (splits EW road into eastbound top / westbound bottom)
+  ctx.moveTo(0, cy);            ctx.lineTo(cx - RW/2, cy);
+  ctx.moveTo(cx + RW/2, cy);   ctx.lineTo(w, cy);
+  // Vertical center line (splits NS road into southbound left / northbound right)
+  ctx.moveTo(cx, 0);            ctx.lineTo(cx, cy - RW/2);
+  ctx.moveTo(cx, cy + RW/2);   ctx.lineTo(cx, h);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // ── ROAD EDGE LINES ──
+  ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+  ctx.lineWidth = 1.5;
+  const EW_top = cy - RW/2, EW_bot = cy + RW/2;
+  const NS_lft = cx - RW/2, NS_rgt = cx + RW/2;
+  const segments = [
+    // EW road top edge (left and right of intersection)
+    [0, EW_top, NS_lft, EW_top], [NS_rgt, EW_top, w, EW_top],
+    // EW road bottom edge
+    [0, EW_bot, NS_lft, EW_bot], [NS_rgt, EW_bot, w, EW_bot],
+    // NS road left edge
+    [NS_lft, 0, NS_lft, EW_top], [NS_lft, EW_bot, NS_lft, h],
+    // NS road right edge
+    [NS_rgt, 0, NS_rgt, EW_top], [NS_rgt, EW_bot, NS_rgt, h],
+  ];
+  segments.forEach(([x1,y1,x2,y2]) => {
+    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  });
+
+  // ── STOP LINES & CROSSWALKS ──
+  // Layout (for each approach):
+  //   intersection edge → [CROSS_GAP=4] → [crosswalk stripes ~50px] → [STOP_GAP=8] → stop line → cars queue here
+  const CROSS_GAP  = 4;   // gap between intersection box edge and first stripe
+  const SW = 6, SG = 5, nStripes = 5;
+  const CROSS_W = nStripes * (SW + SG) - SG; // 50px total crosswalk width
+  const STOP_GAP   = 8;   // gap between last stripe and stop line
+  const SL_OFFSET  = CROSS_GAP + CROSS_W + STOP_GAP; // distance from intersection edge to stop line
+
+  // Override STOP_MARGIN visually for stop line drawing (JS getStopLine uses the const, we redraw here)
+  ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+  ctx.lineWidth = 2.5;
+  ctx.setLineDash([]);
+  ctx.beginPath();
+  // Eastbound stop line — left of intersection
+  ctx.moveTo(cx - RW/2 - SL_OFFSET, cy - RW/2); ctx.lineTo(cx - RW/2 - SL_OFFSET, cy);
+  // Westbound stop line — right of intersection
+  ctx.moveTo(cx + RW/2 + SL_OFFSET, cy);         ctx.lineTo(cx + RW/2 + SL_OFFSET, cy + RW/2);
+  // Southbound stop line — top of intersection
+  ctx.moveTo(cx - RW/2, cy - RW/2 - SL_OFFSET);  ctx.lineTo(cx, cy - RW/2 - SL_OFFSET);
+  // Northbound stop line — bottom of intersection
+  ctx.moveTo(cx, cy + RW/2 + SL_OFFSET);          ctx.lineTo(cx + RW/2, cy + RW/2 + SL_OFFSET);
+  ctx.stroke();
+
+  // ── CROSSWALK STRIPES — between intersection edge and stop line ──
+  ctx.fillStyle = 'rgba(255,255,255,0.2)';
+  for (let s = 0; s < nStripes; s++) {
+    const so = CROSS_GAP + s * (SW + SG);
+    // Top crosswalk (above intersection) — stripes go upward from intersection top edge
+    ctx.fillRect(NS_lft, cy - RW/2 - so - SW, RW, SW);
+    // Bottom crosswalk — stripes go downward from intersection bottom edge
+    ctx.fillRect(NS_lft, cy + RW/2 + so, RW, SW);
+    // Left crosswalk — stripes go leftward from intersection left edge
+    ctx.fillRect(cx - RW/2 - so - SW, EW_top, SW, RW);
+    // Right crosswalk — stripes go rightward from intersection right edge
+    ctx.fillRect(cx + RW/2 + so, EW_top, SW, RW);
+  }
+
+  // ── TRAFFIC LIGHT POLES (4 corners) ──
+  drawTrafficLightPole(ctx, NS_lft - 12, EW_top - 12, 'ns');
+  drawTrafficLightPole(ctx, NS_rgt + 12, EW_top - 12, 'ew');
+  drawTrafficLightPole(ctx, NS_lft - 12, EW_bot + 12, 'ew');
+  drawTrafficLightPole(ctx, NS_rgt + 12, EW_bot + 12, 'ns');
+}
+
+function drawTrafficLightPole(ctx, x, y, axis) {
+  // axis: 'ew' for east/west lights, 'ns' for north/south lights
+  const isGreen  = axis === 'ew' ? crossingPhase === 'ew-green'  : crossingPhase === 'ns-green';
+  const isYellow = axis === 'ew' ? crossingPhase === 'ew-yellow' : crossingPhase === 'ns-yellow';
+  const isRed    = !isGreen && !isYellow;
+
+  // Pole
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x,y-2); ctx.stroke();
+
+  // Light housing
+  ctx.fillStyle = '#111';
+  ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.roundRect(x-7, y-24, 14, 26, 3);
+  ctx.fill(); ctx.stroke();
+
+  // Bulbs
+  const bulbs = [
+    { color: isRed ? '#ef4444' : 'rgba(239,68,68,0.12)', glow: isRed ? '#ef4444' : null, oy: -20 },
+    { color: isYellow ? '#f59e0b' : 'rgba(245,158,11,0.12)', glow: isYellow ? '#f59e0b' : null, oy: -12 },
+    { color: isGreen ? '#22c55e' : 'rgba(34,197,94,0.12)', glow: isGreen ? '#22c55e' : null, oy: -4 },
+  ];
+  bulbs.forEach(b => {
+    if (b.glow) { ctx.shadowColor = b.glow; ctx.shadowBlur = 6; }
+    ctx.fillStyle = b.color;
+    ctx.beginPath(); ctx.arc(x, y+b.oy, 4, 0, Math.PI*2); ctx.fill();
+    ctx.shadowBlur = 0;
+  });
+}
+
+// ── SINGLE ROAD VIEW (horizontal or vertical) ──
+function drawRoadSingle(orientation) {
+  const { w, h, cx, cy } = getSimDimensions();
+  const ctx = simCtx;
+  const RW = ROAD_W;
+  const isH = orientation === 'horizontal';
+
+  // Background
+  ctx.fillStyle = '#0e1118';
+  ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = '#131720';
+  const tile = 36;
+  for (let bx = 0; bx < w; bx += tile*2)
+    for (let by = 0; by < h; by += tile*2) {
+      ctx.fillRect(bx, by, tile, tile);
+      ctx.fillRect(bx+tile, by+tile, tile, tile);
+    }
+
+  // Road surface
+  ctx.fillStyle = '#22263a';
+  if (isH) {
+    ctx.fillRect(0, cy - RW/2, w, RW);
+  } else {
+    ctx.fillRect(cx - RW/2, 0, RW, h);
+  }
+
+  // Center line
+  ctx.strokeStyle = 'rgba(255,210,40,0.5)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([18, 14]);
+  ctx.beginPath();
+  if (isH) { ctx.moveTo(0, cy); ctx.lineTo(w, cy); }
+  else      { ctx.moveTo(cx, 0); ctx.lineTo(cx, h); }
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Road edges
+  ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  if (isH) {
+    ctx.moveTo(0, cy-RW/2); ctx.lineTo(w, cy-RW/2);
+    ctx.moveTo(0, cy+RW/2); ctx.lineTo(w, cy+RW/2);
+  } else {
+    ctx.moveTo(cx-RW/2, 0); ctx.lineTo(cx-RW/2, h);
+    ctx.moveTo(cx+RW/2, 0); ctx.lineTo(cx+RW/2, h);
+  }
+  ctx.stroke();
+
+  // Crosswalk stripes + stop lines at center of canvas
+  const isEWGreen  = crossingPhase === 'ew-green';
+  const isEWYellow = crossingPhase === 'ew-yellow';
+  const isNSGreen  = crossingPhase === 'ns-green';
+  const isNSYellow = crossingPhase === 'ns-yellow';
+  const isPedWalk  = crossingPhase === 'pedestrian-walk';
+  const isPedWarn  = crossingPhase === 'pedestrian-warn';
+  const isGreen    = isH ? isEWGreen  : isNSGreen;
+  const isYellow   = isH ? isEWYellow : isNSYellow;
+  const isRed      = !isGreen && !isYellow;
+
+  const CROSS_GAP = 4, SW = 6, SG = 5, nStripes = 5;
+  const CROSS_W = nStripes*(SW+SG) - SG;
+  const STOP_GAP = 8;
+  const SLO = CROSS_GAP + CROSS_W + STOP_GAP;
+
+  ctx.fillStyle = 'rgba(255,255,255,0.2)';
+  if (isH) {
+    // Stripes across the road at cx
+    for (let s = 0; s < nStripes; s++) {
+      const so = CROSS_GAP + s*(SW+SG);
+      ctx.fillRect(cx - so - SW, cy-RW/2, SW, RW);
+      ctx.fillRect(cx + so,      cy-RW/2, SW, RW);
+    }
+    // Stop lines
+    ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = 2.5; ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(cx - SLO, cy-RW/2); ctx.lineTo(cx - SLO, cy);       // eastbound
+    ctx.moveTo(cx + SLO, cy);       ctx.lineTo(cx + SLO, cy+RW/2); // westbound
+    ctx.stroke();
+  } else {
+    for (let s = 0; s < nStripes; s++) {
+      const so = CROSS_GAP + s*(SW+SG);
+      ctx.fillRect(cx-RW/2, cy - so - SW, RW, SW);
+      ctx.fillRect(cx-RW/2, cy + so,      RW, SW);
+    }
+    ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = 2.5; ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(cx-RW/2, cy - SLO); ctx.lineTo(cx, cy - SLO);       // southbound
+    ctx.moveTo(cx,      cy + SLO); ctx.lineTo(cx+RW/2, cy + SLO);  // northbound
+    ctx.stroke();
+  }
+
+  // Traffic light pole
+  const tlx = isH ? cx - 20 : cx + RW/2 + 14;
+  const tly = isH ? cy - RW/2 - 14 : cy - 20;
+  drawTrafficLightPole(ctx, tlx, tly, isH ? 'ew' : 'ns');
+
+  // Pedestrian walk overlay (simple highlight)
+  if (isPedWalk || isPedWarn) {
+    const alpha = isPedWarn ? 0.3 + 0.2*Math.sin(Date.now()/200) : 0.18;
+    ctx.fillStyle = `rgba(34,197,94,${alpha})`;
+    if (isH) {
+      ctx.fillRect(cx - CROSS_W/2 - CROSS_GAP, cy-RW/2, CROSS_W + CROSS_GAP*2, RW);
+    } else {
+      ctx.fillRect(cx-RW/2, cy - CROSS_W/2 - CROSS_GAP, RW, CROSS_W + CROSS_GAP*2);
+    }
+  }
+}
+
+// ── SIDE-ON STREET VIEW ──
+function drawRoadSideOn() {
+  const { w, h, cx, cy } = getSimDimensions();
+  const ctx = simCtx;
+
+  // Sky / building background
+  ctx.fillStyle = '#0e1118';
+  ctx.fillRect(0, 0, w, h);
+
+  // Buildings in background
+  const buildings = [
+    {x:20,  bw:80,  bh:120, c:'#131820'},
+    {x:130, bw:60,  bh:90,  c:'#12161e'},
+    {x:220, bw:100, bh:150, c:'#141922'},
+    {x:360, bw:70,  bh:110, c:'#111620'},
+    {x:460, bw:90,  bh:140, c:'#131820'},
+    {x:580, bw:60,  bh:100, c:'#121620'},
+    {x:660, bw:110, bh:160, c:'#141a24'},
+    {x:800, bw:80,  bh:130, c:'#121620'},
+  ];
+  const groundY = h * 0.62; // road surface y
+  buildings.forEach(b => {
+    ctx.fillStyle = b.c;
+    ctx.fillRect(b.x, groundY - b.bh, b.bw, b.bh);
+    // Windows
+    ctx.fillStyle = 'rgba(255,240,180,0.07)';
+    for (let wy = groundY - b.bh + 12; wy < groundY - 16; wy += 22) {
+      for (let wx = b.x + 8; wx < b.x + b.bw - 12; wx += 18) {
+        ctx.fillRect(wx, wy, 10, 14);
+      }
+    }
+    // lit windows
+    ctx.fillStyle = 'rgba(255,240,100,0.25)';
+    for (let wy = groundY - b.bh + 12; wy < groundY - 16; wy += 22) {
+      for (let wx = b.x + 8; wx < b.x + b.bw - 12; wx += 18) {
+        if ((wx + wy) % 44 < 18) ctx.fillRect(wx, wy, 10, 14);
+      }
+    }
+  });
+
+  // Road surface (2 lanes)
+  const roadTop = groundY;
+  const laneH   = 46;
+  const roadH   = laneH * 2;
+  ctx.fillStyle = '#22263a';
+  ctx.fillRect(0, roadTop, w, roadH);
+
+  // Pavement / kerb
+  ctx.fillStyle = '#1a1d2a';
+  ctx.fillRect(0, roadTop + roadH, w, h - roadTop - roadH);
+  ctx.fillStyle = '#2a2e40';
+  ctx.fillRect(0, roadTop + roadH, w, 8); // kerb highlight
+
+  // Lane divider (dashed)
+  ctx.strokeStyle = 'rgba(255,210,40,0.5)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([24, 18]);
+  ctx.beginPath();
+  ctx.moveTo(0, roadTop + laneH); ctx.lineTo(w, roadTop + laneH);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Road edge lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(0, roadTop); ctx.lineTo(w, roadTop);
+  ctx.moveTo(0, roadTop + roadH); ctx.lineTo(w, roadTop + roadH);
+  ctx.stroke();
+
+  // Crosswalk stripes at cx
+  const isGreen  = crossingPhase === 'ew-green';
+  const isYellow = crossingPhase === 'ew-yellow';
+  const isPedWalk = crossingPhase === 'pedestrian-walk';
+  const isPedWarn = crossingPhase === 'pedestrian-warn';
+
+  const CROSS_GAP = 4, SW = 8, SG = 5, nStripes = 5;
+  const CROSS_W = nStripes*(SW+SG) - SG;
+  const SLO = CROSS_GAP + CROSS_W + 8;
+
+  ctx.fillStyle = 'rgba(255,255,255,0.22)';
+  for (let s = 0; s < nStripes; s++) {
+    const so = CROSS_GAP + s*(SW+SG);
+    ctx.fillRect(cx - so - SW, roadTop, SW, roadH);
+    ctx.fillRect(cx + so,      roadTop, SW, roadH);
+  }
+
+  // Stop lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.lineWidth = 2.5; ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.moveTo(cx - SLO, roadTop);       ctx.lineTo(cx - SLO, roadTop + laneH);   // eastbound
+  ctx.moveTo(cx + SLO, roadTop + laneH); ctx.lineTo(cx + SLO, roadTop + roadH); // westbound
+  ctx.stroke();
+
+  // Pedestrian walk highlight
+  if (isPedWalk || isPedWarn) {
+    const alpha = isPedWarn ? 0.3 + 0.2*Math.sin(Date.now()/200) : 0.2;
+    ctx.fillStyle = `rgba(34,197,94,${alpha})`;
+    ctx.fillRect(cx - CROSS_W/2 - CROSS_GAP, roadTop, CROSS_W + CROSS_GAP*2, roadH);
+
+    // Pedestrian figure on kerb
+    const t = Date.now();
+    const bob = Math.sin(t/200) * 2;
+    const px = cx + 30, py = roadTop + roadH + 20;
+    ctx.fillStyle = isPedWarn ? '#f59e0b' : '#22c55e';
+    ctx.beginPath(); ctx.arc(px, py + bob - 8, 5, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = isPedWarn ? '#f59e0b' : '#22c55e';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(px, py + bob - 3); ctx.lineTo(px, py + bob + 8);
+    const la = Math.sin(t/150) * 0.4;
+    ctx.moveTo(px, py + bob - 2); ctx.lineTo(px - 5, py + bob + 4);
+    ctx.moveTo(px, py + bob - 2); ctx.lineTo(px + 5, py + bob + 4);
+    ctx.moveTo(px, py + bob + 8); ctx.lineTo(px - 4*Math.sin(la+0.3), py + bob + 16);
+    ctx.moveTo(px, py + bob + 8); ctx.lineTo(px + 4*Math.sin(la-0.3), py + bob + 16);
+    ctx.stroke();
+  }
+
+  // Traffic light pole (side of road)
+  const tlx = cx - 30, tly = roadTop - 4;
+  drawTrafficLightPoleSide(ctx, tlx, tly, isGreen, isYellow);
+}
+
+function drawTrafficLightPoleSide(ctx, x, y, isGreen, isYellow) {
+  const isRed = !isGreen && !isYellow;
+  // Pole
+  ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - 50); ctx.stroke();
+  // Arm
+  ctx.beginPath(); ctx.moveTo(x, y - 50); ctx.lineTo(x + 20, y - 50); ctx.stroke();
+  // Housing
+  ctx.fillStyle = '#111'; ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.roundRect(x + 13, y - 66, 14, 26, 3); ctx.fill(); ctx.stroke();
+  // Bulbs
+  const bulbs = [
+    { c: isRed    ? '#ef4444' : 'rgba(239,68,68,0.12)',   glow: isRed    ? '#ef4444' : null, oy: -62 },
+    { c: isYellow ? '#f59e0b' : 'rgba(245,158,11,0.12)',  glow: isYellow ? '#f59e0b' : null, oy: -54 },
+    { c: isGreen  ? '#22c55e' : 'rgba(34,197,94,0.12)',   glow: isGreen  ? '#22c55e' : null, oy: -46 },
+  ];
+  bulbs.forEach(b => {
+    if (b.glow) { ctx.shadowColor = b.glow; ctx.shadowBlur = 8; }
+    ctx.fillStyle = b.c;
+    ctx.beginPath(); ctx.arc(x + 20, y + b.oy, 4, 0, Math.PI*2); ctx.fill();
+    ctx.shadowBlur = 0;
+  });
+}
+
+function drawCar(car) {
+  const ctx = simCtx;
+  // For horizontal cars (east/west): car is wider than tall
+  // For vertical cars (north/south): car is taller than wide
+  const isH = car.dir === 'east' || car.dir === 'west';
+  // Car body: 36px long, 20px wide — fits in 45px lane with margin
+  const bodyL = 36; // along direction of travel
+  const bodyW = 20; // perpendicular to travel
+  const bw = isH ? bodyL : bodyW;  // canvas x-dimension of body
+  const bh = isH ? bodyW : bodyL;  // canvas y-dimension of body
+
+  ctx.save();
+  ctx.translate(Math.round(car.x), Math.round(car.y));
+
+  // Drop shadow
+  ctx.shadowColor = 'rgba(0,0,0,0.6)';
+  ctx.shadowBlur = 6;
+  ctx.shadowOffsetX = 1;
+  ctx.shadowOffsetY = 2;
+
+  // Car body (centered on 0,0)
+  ctx.fillStyle = car.color;
+  ctx.beginPath();
+  ctx.roundRect(-bw/2, -bh/2, bw, bh, 3);
+  ctx.fill();
+  ctx.shadowBlur = 0; ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0;
+
+  // Roof / cab tint (darker center rectangle)
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  if (isH) {
+    ctx.fillRect(-bw/2 + 6, -bh/2 + 3, bw - 12, bh - 6);
+  } else {
+    ctx.fillRect(-bw/2 + 3, -bh/2 + 6, bw - 6, bh - 12);
+  }
+
+  // Windshield highlight
+  ctx.fillStyle = 'rgba(160,220,255,0.25)';
+  if (car.dir === 'east')  ctx.fillRect( bw/2-10, -bh/2+3, 7, bh-6);
+  if (car.dir === 'west')  ctx.fillRect(-bw/2+3,  -bh/2+3, 7, bh-6);
+  if (car.dir === 'south') ctx.fillRect(-bw/2+3,   bh/2-10, bw-6, 7);
+  if (car.dir === 'north') ctx.fillRect(-bw/2+3,  -bh/2+3, bw-6, 7);
+
+  // Lights
+  const isStopped = car.state === 'stopped' || car.state === 'slowing';
+  const brakeOn = isStopped ? '#ef4444' : 'rgba(180,20,20,0.5)';
+  const headOn  = '#fffce0';
+
+  ctx.shadowBlur = 5;
+  if (car.dir === 'east') {
+    ctx.fillStyle = headOn;  ctx.shadowColor = headOn;
+    ctx.fillRect( bw/2-2, -bh/2+2, 2, 4);
+    ctx.fillRect( bw/2-2,  bh/2-6, 2, 4);
+    ctx.fillStyle = brakeOn; ctx.shadowColor = '#ef4444';
+    ctx.shadowBlur = isStopped ? 8 : 2;
+    ctx.fillRect(-bw/2,   -bh/2+2, 2, 4);
+    ctx.fillRect(-bw/2,    bh/2-6, 2, 4);
+  } else if (car.dir === 'west') {
+    ctx.fillStyle = headOn;  ctx.shadowColor = headOn;
+    ctx.fillRect(-bw/2,   -bh/2+2, 2, 4);
+    ctx.fillRect(-bw/2,    bh/2-6, 2, 4);
+    ctx.fillStyle = brakeOn; ctx.shadowColor = '#ef4444';
+    ctx.shadowBlur = isStopped ? 8 : 2;
+    ctx.fillRect( bw/2-2, -bh/2+2, 2, 4);
+    ctx.fillRect( bw/2-2,  bh/2-6, 2, 4);
+  } else if (car.dir === 'south') {
+    ctx.fillStyle = headOn;  ctx.shadowColor = headOn;
+    ctx.fillRect(-bw/2+2,  bh/2-2, 4, 2);
+    ctx.fillRect( bw/2-6,  bh/2-2, 4, 2);
+    ctx.fillStyle = brakeOn; ctx.shadowColor = '#ef4444';
+    ctx.shadowBlur = isStopped ? 8 : 2;
+    ctx.fillRect(-bw/2+2, -bh/2,   4, 2);
+    ctx.fillRect( bw/2-6, -bh/2,   4, 2);
+  } else { // north
+    ctx.fillStyle = headOn;  ctx.shadowColor = headOn;
+    ctx.fillRect(-bw/2+2, -bh/2,   4, 2);
+    ctx.fillRect( bw/2-6, -bh/2,   4, 2);
+    ctx.fillStyle = brakeOn; ctx.shadowColor = '#ef4444';
+    ctx.shadowBlur = isStopped ? 8 : 2;
+    ctx.fillRect(-bw/2+2,  bh/2-2, 4, 2);
+    ctx.fillRect( bw/2-6,  bh/2-2, 4, 2);
+  }
+
+  ctx.shadowBlur = 0;
+  ctx.restore();
+}
+
+function drawPedestrianOverlay() {
+  const { cx, cy } = getSimDimensions();
+  const ctx = simCtx;
+  const isWalking = crossingPhase === 'pedestrian-walk';
+  const isWarning = crossingPhase === 'pedestrian-warn';
+
+  if (isWalking || isWarning) {
+    const alpha = isWarning ? 0.3 + 0.2*Math.sin(Date.now()/200) : 0.18;
+    ctx.fillStyle = `rgba(34,197,94,${alpha})`;
+    const CROSS_W = 50; // 5 stripes × 11px - 5 = 50px
+    const CROSS_GAP = 4;
+    // Crosswalk highlight — sits between intersection edge and stop line
+    ctx.fillRect(cx-ROAD_W/2, cy-ROAD_W/2 - CROSS_GAP - CROSS_W, ROAD_W, CROSS_W + CROSS_GAP);
+    ctx.fillRect(cx-ROAD_W/2, cy+ROAD_W/2 + CROSS_GAP,            ROAD_W, CROSS_W + CROSS_GAP);
+
+    // Animated pedestrian figures
+    const t = Date.now();
+    const figures = [
+      { x: cx - 20, y: cy - sl - 12, phase: 0 },
+      { x: cx + 10, y: cy + sl + 12, phase: Math.PI },
+    ];
+    figures.forEach(f => {
+      const bob = Math.sin(t/200 + f.phase) * 2;
+      ctx.fillStyle = isWarning ? '#f59e0b' : '#22c55e';
+      ctx.beginPath();
+      ctx.arc(f.x, f.y + bob - 6, 4, 0, Math.PI*2); // head
+      ctx.fill();
+      ctx.strokeStyle = isWarning ? '#f59e0b' : '#22c55e';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(f.x, f.y + bob - 2);
+      ctx.lineTo(f.x, f.y + bob + 6); // body
+      ctx.moveTo(f.x, f.y + bob + 1);
+      ctx.lineTo(f.x - 4, f.y + bob + 4); // arm L
+      ctx.moveTo(f.x, f.y + bob + 1);
+      ctx.lineTo(f.x + 4, f.y + bob + 4); // arm R
+      const legAngle = Math.sin(t/150 + f.phase) * 0.4;
+      ctx.moveTo(f.x, f.y + bob + 6);
+      ctx.lineTo(f.x - 4*Math.sin(legAngle+0.3), f.y + bob + 12);
+      ctx.moveTo(f.x, f.y + bob + 6);
+      ctx.lineTo(f.x + 4*Math.sin(legAngle-0.3), f.y + bob + 12);
+      ctx.stroke();
+    });
+  }
+}
+
+function updateSimSidebar() {
+  const vGreen  = crossingPhase === 'ew-green' || crossingPhase === 'ns-green';
+  const vYellow = crossingPhase === 'ew-yellow' || crossingPhase === 'ns-yellow';
+  const vRed    = !vGreen && !vYellow;
+  const isWalk  = crossingPhase === 'pedestrian-walk';
+  const isWarn  = crossingPhase === 'pedestrian-warn';
+
+  // Sim sidebar bulbs — vehicle lights (same rule: green=vehicle moving, red=ped walking)
+  ['sbulb-red','sbulb-red2'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.className = 'sim-bulb red' + (vRed ? ' on' : '');
+  });
+  ['sbulb-yellow','sbulb-yellow2'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.className = 'sim-bulb yellow' + (vYellow ? ' on' : '');
+  });
+  ['sbulb-green','sbulb-green2'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.className = 'sim-bulb green' + (vGreen ? ' on' : '');
+  });
+
+  // Pedestrian icon
+  const pedIcon = document.getElementById('sim-ped-icon');
+  if (pedIcon) {
+    if (isWalk)     { pedIcon.textContent = '🚶'; pedIcon.className = 'sim-ped-icon walk'; }
+    else if (isWarn){ pedIcon.textContent = '🚷'; pedIcon.className = 'sim-ped-icon'; }
+    else            { pedIcon.textContent = '🛑'; pedIcon.className = 'sim-ped-icon'; }
+  }
+
+  const cd = document.getElementById('sim-countdown');
+  if (cd) cd.textContent = phaseTimer;
+
+  const tag = document.getElementById('sim-phase-tag');
+  if (tag) {
+    const phases = {
+      'ew-green':        ['EW Green', 'phase-tag-go'],
+      'ew-yellow':       ['EW Yellow', 'phase-tag-warn'],
+      'ns-green':        ['NS Green', 'phase-tag-go'],
+      'ns-yellow':       ['NS Yellow', 'phase-tag-warn'],
+      'pedestrian-walk': ['Walk Signal',   'phase-tag-stop'],
+      'pedestrian-warn': ['Warning',       'phase-tag-warn'],
+    };
+    const [label, cls] = phases[crossingPhase] || ['—', 'phase-tag-stop'];
+    tag.textContent = label;
+    tag.className = 'sim-phase-tag ' + cls;
+  }
+}
+
+function addSimEvent(msg, type='') {
+  const list = document.getElementById('sim-event-list');
+  const now = new Date();
+  const t = [now.getHours(),now.getMinutes(),now.getSeconds()].map(v=>String(v).padStart(2,'0')).join(':');
+
+  // Remove placeholder
+  if (list.children.length === 1 && list.children[0].tagName === 'DIV' && !list.children[0].className.includes('sim-evt')) {
+    list.innerHTML='';
+  }
+
+  const item = document.createElement('div');
+  item.className = 'sim-evt ' + type;
+  item.innerHTML = `<span class="sim-evt-time">${t}</span><span>${msg}</span>`;
+  list.insertBefore(item, list.firstChild);
+  while (list.children.length > 40) list.removeChild(list.lastChild);
+}
+
+// Hook into phase changes for sim events
+const _origOnPhaseStart = onPhaseStart;
+// Override with extended version that also fires sim events
+function onPhaseStartFull(phase) {
+  _origOnPhaseStart(phase);
+  if (page === 'sim' || true) {
+    switch(phase) {
+      case 'ew-green':
+        addSimEvent('🟢 East-West green — EW cars flowing', 'go-evt');
+        break;
+      case 'ns-green':
+        addSimEvent('🟢 North-South green — NS cars flowing', 'go-evt');
+        break;
+      case 'ew-yellow':
+      case 'ns-yellow':
+        addSimEvent('🟡 Yellow — vehicles slowing', 'warn-evt');
+        break;
+      case 'pedestrian-walk':
+        const t = getCrossingTime();
+        addSimEvent(`🚶 Pedestrian walk signal — ${t}s${mobilityDetected?' (extended)':''}`, 'highlight');
+        break;
+      case 'pedestrian-warn':
+        addSimEvent('⚠️ Walk signal ending', 'warn-evt');
+        break;
+    }
+  }
+}
+
+// Patch onPhaseStart
+window._simPatchedPhaseStart = true;
+
+function simLoop(ts) {
+  if (!simRunning) return;
+
+  const rawDt = (ts - simLastTime) / 1000;
+  simLastTime = ts;
+  const dt = Math.min(rawDt, 0.05) * simSpeed;
+
+  // Resize canvas to element size
+  const rect = simCanvas.getBoundingClientRect();
+  if (simCanvas.width !== rect.width || simCanvas.height !== rect.height) {
+    simCanvas.width = Math.round(rect.width);
+    simCanvas.height = Math.round(rect.height);
+  }
+
+  // Draw road
+  if (simViewMode === 'sideon') {
+    drawRoadSideOn();
+  } else if (simViewMode === 'horizontal') {
+    drawRoadSingle('horizontal');
+  } else if (simViewMode === 'vertical') {
+    drawRoadSingle('vertical');
+  } else {
+    drawRoad();
+  }
+
+  // Auto spawn
+  autoSpawn();
+
+  // Update and draw cars (back to front by y for NS, just loop for EW)
+  updateCars(dt);
+
+  // Sort cars for depth (south-facing cars drawn last = on top)
+  const sorted = [...simCars].sort((a,b) => {
+    const aIsV = a.dir==='north'||a.dir==='south';
+    const bIsV = b.dir==='north'||b.dir==='south';
+    if (aIsV && !bIsV) return 1;
+    if (!aIsV && bIsV) return -1;
+    return a.y - b.y;
+  });
+  sorted.forEach(c => drawCar(c));
+
+  // Pedestrian overlay
+  drawPedestrianOverlay();
+
+  // Sidebar sync
+  updateSimSidebar();
+
+  simAnimId = requestAnimationFrame(simLoop);
+}
+
+function toggleSim() {
+  if (simRunning) {
+    simRunning = false;
+    cancelAnimationFrame(simAnimId);
+    document.getElementById('sim-toggle-btn').textContent = '▶ Start Simulation';
+    addSimEvent('⏸ Simulation paused', '');
+  } else {
+    simRunning = true;
+    simLastTime = performance.now();
+    document.getElementById('sim-toggle-btn').textContent = '⏸ Pause';
+    addSimEvent('▶ Simulation started', 'highlight');
+    simAnimId = requestAnimationFrame(simLoop);
+    // Seed a few staggered cars
+    ['east','west','north','south'].forEach((d,i) => {
+      setTimeout(() => spawnCar(d, 0), i * 400);
+    });
+  }
+}
+
+// Auto-start sim when switching to sim page — handled via nav onclick in HTML
+
+// Also fire sim events from original phase system — hook via simPhaseHook
+function simPhaseHook(phase) {
+  switch(phase) {
+    case 'ew-green':
+      setTimeout(()=>addSimEvent('🟢 East-West green — EW cars flowing','go-evt'),10); break;
+    case 'ns-green':
+      setTimeout(()=>addSimEvent('🟢 North-South green — NS cars flowing','go-evt'),10); break;
+    case 'ew-yellow':
+    case 'ns-yellow':
+      setTimeout(()=>addSimEvent('🟡 Yellow — vehicles decelerating','warn-evt'),10); break;
+    case 'pedestrian-walk':
+      const ct = getCrossingTime();
+      setTimeout(()=>addSimEvent(`🚶 Pedestrian walk signal — ${ct}s${mobilityDetected?' (+mobility ext)':''}`,'highlight'),10); break;
+    case 'pedestrian-warn':
+      setTimeout(()=>addSimEvent('⚠️ Signal ending soon','warn-evt'),10); break;
+  }
+}
+
 seedLog();
 loadModel();
+// Populate camera list on load, and refresh if devices are plugged/unplugged
+enumerateCameras();
+navigator.mediaDevices.addEventListener('devicechange', () => {
+  if (!running) enumerateCameras();
+});
+
+
 </script>
 </body>
 </html>
