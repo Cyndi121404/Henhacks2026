@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SmartCross — Intelligent Crosswalk System</title>
+<title>Hen-Tersection — Intelligent Crosswalk System</title>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2/dist/coco-ssd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
@@ -886,7 +886,7 @@ input[type=range] {
 
 <!-- ── NAVIGATION ── -->
 <nav>
-  <div class="nav-logo">Smart<span>Cross</span></div>
+  <div class="nav-logo">🐔 Hen-<span>Tersection</span></div>
   <div class="nav-tab live active" data-page="live" onclick="switchPage('live',this)">
     <div class="dot"></div> Live Monitor
   </div>
@@ -927,42 +927,7 @@ input[type=range] {
         </div>
       </div>
 
-      <!-- Signal overlay bottom center -->
-      <div class="signal-overlay">
-        <!-- Traffic light -->
-        <div class="traffic-light">
-          <div class="light-label">VEHICLE</div>
-          <div class="lights">
-            <div class="light-bulb red" id="light-red"></div>
-            <div class="light-bulb yellow" id="light-yellow"></div>
-            <div class="light-bulb green" id="light-green"></div>
-          </div>
-        </div>
 
-        <!-- Pedestrian walk signal -->
-        <div class="walk-signal">
-          <div class="light-label">PEDESTRIAN</div>
-          <div class="walk-icon" id="walk-icon">🚶</div>
-          <div class="countdown-ring" id="countdown-ring">
-            <svg viewBox="0 0 48 48">
-              <circle class="ring-track" cx="24" cy="24" r="20"/>
-              <circle class="ring-fill" id="ring-fill" cx="24" cy="24" r="20"
-                stroke-dasharray="125.7" stroke-dashoffset="0" stroke="#22c55e"/>
-            </svg>
-            <span class="countdown-num" id="countdown-num">--</span>
-          </div>
-        </div>
-
-        <!-- Traffic light 2 (far side) -->
-        <div class="traffic-light">
-          <div class="light-label">VEHICLE</div>
-          <div class="lights">
-            <div class="light-bulb red" id="light-red2"></div>
-            <div class="light-bulb yellow" id="light-yellow2"></div>
-            <div class="light-bulb green" id="light-green2"></div>
-          </div>
-        </div>
-      </div>
     </div>
 
     <!-- Bottom controls bar -->
@@ -994,23 +959,27 @@ input[type=range] {
   <!-- Right sidebar -->
   <div class="live-sidebar">
     <div class="sidebar-section">
-      <div class="section-label">Statistics</div>
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-card-val green" id="stat-crossed">0</div>
-          <div class="stat-card-label">Crossed Today</div>
+      <div class="section-label">Signal Status</div>
+      <div style="display:flex; gap:16px; justify-content:center; padding:8px 0;">
+        <div class="traffic-light">
+          <div class="light-label">VEHICLE</div>
+          <div class="lights">
+            <div class="light-bulb red" id="light-red"></div>
+            <div class="light-bulb yellow" id="light-yellow"></div>
+            <div class="light-bulb green" id="light-green"></div>
+          </div>
         </div>
-        <div class="stat-card">
-          <div class="stat-card-val red" id="stat-jay">0</div>
-          <div class="stat-card-label">Jaywalkers</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-card-val blue" id="stat-mobility">0</div>
-          <div class="stat-card-label">Mobility Assists</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-card-val amber" id="stat-avgtime">--s</div>
-          <div class="stat-card-label">Avg Cross Time</div>
+        <div class="walk-signal">
+          <div class="light-label">PEDESTRIAN</div>
+          <div class="walk-icon" id="walk-icon">🚶</div>
+          <div class="countdown-ring" id="countdown-ring">
+            <svg viewBox="0 0 48 48">
+              <circle class="ring-track" cx="24" cy="24" r="20"/>
+              <circle class="ring-fill" id="ring-fill" cx="24" cy="24" r="20"
+                stroke-dasharray="125.7" stroke-dashoffset="0" stroke="#22c55e"/>
+            </svg>
+            <span class="countdown-num" id="countdown-num">--</span>
+          </div>
         </div>
       </div>
     </div>
@@ -1048,7 +1017,25 @@ input[type=range] {
       <div class="log-page-title">Event Log</div>
       <div style="font-size:0.75rem; color:var(--muted); margin-top:2px">All pedestrian crossings & incidents</div>
     </div>
-    <div style="display:flex; align-items:center; gap:10px;">
+    <div style="display:flex; align-items:center; gap:16px;">
+      <div class="stats-grid" style="display:flex; gap:8px;">
+        <div class="stat-card">
+          <div class="stat-card-val green" id="stat-crossed">0</div>
+          <div class="stat-card-label">Crossed Today</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-val red" id="stat-jay">0</div>
+          <div class="stat-card-label">Jaywalkers</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-val blue" id="stat-mobility">0</div>
+          <div class="stat-card-label">Mobility Assists</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-val amber" id="stat-avgtime">--s</div>
+          <div class="stat-card-label">Avg Cross Time</div>
+        </div>
+      </div>
       <div class="log-filters">
         <button class="filter-btn active" onclick="filterLog('all',this)">All</button>
         <button class="filter-btn" onclick="filterLog('normal',this)">Normal</button>
@@ -1187,6 +1174,7 @@ input[type=range] {
     <div class="admin-nav-item" onclick="switchAdminPanel('zones',this)">📐 Crossing Zones</div>
     <div class="admin-nav-item" onclick="switchAdminPanel('signals',this)">🚦 Signal Config</div>
     <div class="admin-nav-item" onclick="switchAdminPanel('simview',this)">🗺 Simulation View</div>
+    <div class="admin-nav-item" onclick="switchAdminPanel('snowflake',this)">❄ Snowflake DB</div>
   </div>
 
   <div class="admin-content">
@@ -1506,7 +1494,7 @@ input[type=range] {
         <div class="setting-row" style="align-items:flex-start; flex-direction:column; gap:14px; padding:16px">
           <div style="display:flex; flex-direction:column; gap:10px; width:100%">
             <label style="display:flex; align-items:center; gap:12px; cursor:pointer; padding:12px 14px; background:var(--surface2); border:2px solid var(--border); border-radius:8px; transition:border-color 0.2s" id="view-opt-intersection" onclick="setSimView('intersection')">
-              <input type="radio" name="sim-view" value="intersection" checked style="accent-color:var(--accent);width:16px;height:16px">
+              <input type="radio" name="sim-view" value="intersection" style="accent-color:var(--accent);width:16px;height:16px">
               <div>
                 <div style="font-weight:500;font-size:0.85rem;margin-bottom:2px">🚦 Intersection (Default)</div>
                 <div style="font-size:0.72rem;color:var(--muted)">4-way intersection with EW and NS roads. Both axes active.</div>
@@ -1527,7 +1515,7 @@ input[type=range] {
               </div>
             </label>
             <label style="display:flex; align-items:center; gap:12px; cursor:pointer; padding:12px 14px; background:var(--surface2); border:2px solid var(--border); border-radius:8px; transition:border-color 0.2s" id="view-opt-sideon" onclick="setSimView('sideon')">
-              <input type="radio" name="sim-view" value="sideon" style="accent-color:var(--accent);width:16px;height:16px">
+              <input type="radio" name="sim-view" value="sideon" checked style="accent-color:var(--accent);width:16px;height:16px">
               <div>
                 <div style="font-weight:500;font-size:0.85rem;margin-bottom:2px">🏙 Side-On Street View</div>
                 <div style="font-size:0.72rem;color:var(--muted)">View from the pavement — cars pass left to right, pedestrian waits at kerb.</div>
@@ -1535,6 +1523,77 @@ input[type=range] {
             </label>
           </div>
           <div style="font-size:0.72rem;color:var(--muted);margin-top:4px">Changes take effect immediately. Simulation will restart with the new view.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SNOWFLAKE DB -->
+    <div class="admin-panel" id="panel-snowflake">
+      <div class="admin-h1">Snowflake Integration</div>
+      <div class="admin-sub">Connect Hen-Tersection to your Snowflake data warehouse for persistent event logging</div>
+
+      <div class="settings-group">
+        <div class="settings-group-title">SQL Schema (copy into Snowflake)</div>
+        <pre style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:14px;font-family:var(--font-mono);font-size:0.72rem;color:#a8d8a8;overflow-x:auto;line-height:1.6">-- 1. Tell Snowflake WHERE to work
+USE WAREHOUSE CROSSWALK_WH;
+USE DATABASE SMART_CITY;
+USE SCHEMA TRAFFIC_LOGS;
+
+-- 2. Create the tables
+CREATE OR REPLACE TABLE CROSSING_LOGS (
+  event_id         STRING  DEFAULT uuid_string(),
+  timestamp        TIMESTAMP_NTZ DEFAULT current_timestamp(),
+  pedestrian_type  STRING,
+  duration_seconds FLOAT,
+  was_light_extended BOOLEAN
+);
+
+CREATE OR REPLACE TABLE JAYWALKING_VIOLATIONS (
+  violation_id  STRING DEFAULT uuid_string(),
+  timestamp     TIMESTAMP_NTZ DEFAULT current_timestamp(),
+  severity      STRING,
+  description   TEXT
+);</pre>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-title">Query: Recent Integration Tests</div>
+        <pre style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:14px;font-family:var(--font-mono);font-size:0.72rem;color:#9ec5fe;overflow-x:auto;line-height:1.6">SELECT timestamp, severity, description
+FROM SMART_CITY.TRAFFIC_LOGS.JAYWALKING_VIOLATIONS
+WHERE description LIKE 'INTEGRATION_TEST%'
+ORDER BY timestamp DESC
+LIMIT 5;</pre>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-title">Connection Settings</div>
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-label-text">Snowflake Account</div>
+            <div class="setting-label-desc">e.g. xy12345.us-east-1 (requires backend proxy for CORS)</div>
+          </div>
+          <input type="text" id="sf-account" placeholder="account.region" style="background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:7px 10px;color:var(--text);font-family:var(--font-mono);font-size:0.75rem;width:200px;outline:none">
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">
+            <div class="setting-label-text">Enable Real Logging</div>
+            <div class="setting-label-desc">Send events to Snowflake (requires /api/snowflake proxy)</div>
+          </div>
+          <div class="toggle" id="t-sf-enabled" onclick="toggleSetting(this); SNOWFLAKE_CONFIG.enabled=this.classList.contains('on')">
+            <div class="toggle-thumb"></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;margin-top:8px;flex-wrap:wrap">
+          <button class="btn primary" onclick="saveSFConfig()">💾 Save Config</button>
+          <button class="btn" id="sf-test-btn" onclick="testSFConnection()">🔌 Test Connection</button>
+          <span id="sf-status" style="font-size:0.75rem;color:var(--muted)">Not configured</span>
+        </div>
+      </div>
+
+      <div class="settings-group" style="margin-top:16px">
+        <div class="settings-group-title">Event Log Buffer <span style="font-weight:400;color:var(--muted);font-size:0.7rem">(local preview of what gets sent)</span></div>
+        <div id="sf-event-list" style="max-height:260px;overflow-y:auto;padding:4px 0">
+          <div style="color:var(--muted);font-size:0.72rem;text-align:center;padding:20px">No events yet</div>
         </div>
       </div>
     </div>
@@ -1569,8 +1628,9 @@ let warnTriggered = false;
 let lastSpeech = '';
 
 // Front-on crosswalk view column boundaries (fraction of frame width)
-const CW_LEFT_FRAC  = 0.33; // left kerb edge
-const CW_RIGHT_FRAC = 0.67; // right kerb edge
+// Wider crosswalk, narrower wait zones
+const CW_LEFT_FRAC  = 0.25; // left kerb edge (was 0.33)
+const CW_RIGHT_FRAC = 0.75; // right kerb edge (was 0.67)
 
 // Stats
 let statCrossed = 0, statJay = 0, statMobility = 0;
@@ -1613,7 +1673,7 @@ function toggleSetting(el) {
 // ═══════════════════════════════════════
 const PHASES = {
   'ew-green':       { duration: () => getSettingVal('r-green-phase', 45), next: 'ew-yellow' },
-  'ew-yellow':      { duration: () => getSettingVal('r-yellow-phase', 4), next: 'ns-green' },
+  'ew-yellow':      { duration: () => getSettingVal('r-yellow-phase', 4), next: 'pedestrian-walk' },
   'ns-green':       { duration: () => getSettingVal('r-green-phase', 45), next: 'ns-yellow' },
   'ns-yellow':      { duration: () => getSettingVal('r-yellow-phase', 4), next: 'pedestrian-walk' },
   'pedestrian-walk':{ duration: () => getCrossingTime(), next: 'pedestrian-warn' },
@@ -1643,6 +1703,26 @@ function setPhase(phase) {
   phaseMax = PHASES[phase].duration();
   phaseTimer = phaseMax;
   warnTriggered = false;
+  // Reset per-cycle flags
+  if (phase === 'ew-green' || phase === 'ns-green') {
+    window._greenReducedThisCycle = false;
+    window._greenExtendedThisCycle = false;
+    window._warnExtended = false;
+    window._slowCrosserExtendedAt = null;
+    window._slowCrosserFlagged = false;
+    window._authoritiesAlerted = false;
+    // Note: _triagePending/_triageDispatched/_triagePedId/_triageBbox are NOT reset here
+    // They are consumed by onPhaseStart('ew-green'/'ns-green') below, then cleared in a timeout
+  }
+  if (phase === 'pedestrian-walk') {
+    // Only reset the extension guard if this is NOT being triggered by our own extension code
+    // We detect that by checking _warnExtended — if it's already true, this is the extension itself
+    if (!window._warnExtended) {
+      window._slowCrosserExtendedAt = null;
+      window._slowCrosserFlagged = false;
+    }
+    window._pedClearedAt = null;
+  }
 
   updateLights();
   updatePhaseUI();
@@ -1655,9 +1735,25 @@ function setPhase(phase) {
 function tickPhase() {
   phaseTimer--;
   updateTimerUI();
+
   if (phaseTimer <= 0) {
     clearInterval(countdownTimer);
-    setPhase(PHASES[crossingPhase].next);
+    // If this yellow was triggered by a jaywalker and all jaywalkers have left → revert to green
+    if (window._jaywalkerYellow &&
+        (crossingPhase === 'ew-yellow' || crossingPhase === 'ns-yellow') &&
+        !trackedPedestrians.some(p => p.loggedJay && !p.capturedPhoto && p.seenThisFrame)) {
+      window._jaywalkerYellow = false;
+      const revert = window._jaywalkerYellowRevertTo || 'ew-green';
+      window._jaywalkerYellowRevertTo = null;
+      showToast('✅ Crosswalk clear — reverting to green', '#22c55e');
+      setPhase(revert);
+      phaseTimer = Math.max(8, Math.floor(getSettingVal('r-green-phase', 45) * 0.4));
+      phaseMax = phaseTimer;
+      updateTimerUI();
+    } else {
+      window._jaywalkerYellow = false;
+      setPhase(PHASES[crossingPhase].next);
+    }
   }
 }
 
@@ -1667,7 +1763,7 @@ function updateLights() {
   const vRed    = !vGreen && !vYellow;
 
   // Update all 4 vehicle light elements (2 on live monitor, 2 on sim sidebar)
-  const lightIds = ['light-red','light-yellow','light-green','light-red2','light-yellow2','light-green2'];
+  const lightIds = ['light-red','light-yellow','light-green'];
   lightIds.forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
@@ -1735,11 +1831,126 @@ function onPhaseStart(phase) {
       showToast('🚶 Walk signal active — ' + getCrossingTime() + 's', '#22c55e');
     }
     logEvent('walk', mobilityDetected);
+    sfLogCrossing(mobilityDetected ? 'mobility' : 'normal', getCrossingTime(), mobilityDetected);
   } else if (phase === 'pedestrian-warn') {
+    // Check immediately if anyone is still in the crosswalk — if so, skip warn and extend now
+    const canvas2 = document.getElementById('canvas');
+    const cw2 = canvas2 ? canvas2.width : 800;
+    const warnCwZone = zoneShapes.find(z => z.type === 'crosswalk');
+    const warnLeft  = warnCwZone ? warnCwZone.x * (cw2/800) : cw2 * CW_LEFT_FRAC;
+    const warnRight = warnCwZone ? (warnCwZone.x+warnCwZone.w) * (cw2/800) : cw2 * CW_RIGHT_FRAC;
+    const someoneStillCrossing = trackedPedestrians.some(p => p.seenThisFrame && p.cx >= warnLeft && p.cx <= warnRight);
+
+    if (someoneStillCrossing && !window._warnExtended) {
+      // First time warn fires with someone still inside → grant one 8s extension
+      window._warnExtended = true;
+      window._slowCrosserExtendedAt = performance.now();
+      window._slowCrosserFlagged = false;
+      clearInterval(countdownTimer);
+      crossingPhase = 'pedestrian-walk';
+      phaseTimer = 8;
+      phaseMax   = 8;
+      updateTimerUI();
+      updateLights();
+      updatePhaseUI();
+      countdownTimer = setInterval(() => tickPhase(), 1000);
+      showToast('⚠️ Person still crossing — FINAL 8s extension', '#f59e0b');
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utt = new SpeechSynthesisUtterance('Warning. You must finish crossing now. The signal will change in 8 seconds.');
+        utt.rate = parseFloat(document.getElementById('r-speech-rate')?.value || 9) / 10;
+        utt.volume = parseFloat(document.getElementById('r-vol')?.value || 9) / 10;
+        window.speechSynthesis.speak(utt);
+      }
+      return;
+    }
+
+    // pedestrian-warn starting after completed extension — someone still crossing
+    // Only store the ped reference here. Photo + flag + triage all fire when light goes green.
+    if (window._warnExtended && someoneStillCrossing && !window._triagePending) {
+      const refusePed = trackedPedestrians.find(p => p.seenThisFrame && p.cx >= warnLeft && p.cx <= warnRight);
+      if (refusePed) {
+        window._triagePending = true;
+        window._triagePedRef = refusePed; // snapshot ref — used when green fires
+        window._triageBbox   = [...refusePed.bbox];
+        window._triagePedId  = refusePed.id;
+        // Inform the pedestrian their situation is being assessed — calm, non-alarming
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          const rate = parseFloat(document.getElementById('r-speech-rate')?.value || 9) / 10;
+          const vol  = parseFloat(document.getElementById('r-vol')?.value || 9) / 10;
+          const msgs = [
+            'This crossing event is being reviewed for your safety and wellbeing.',
+            'This crossing event is being reviewed for your safety and wellbeing.',
+            'This crossing event is being reviewed for your safety and wellbeing.'
+          ];
+          let mIdx = 0;
+          function speakReview() {
+            if (mIdx >= msgs.length) return;
+            const utt = new SpeechSynthesisUtterance(msgs[mIdx++]);
+            utt.rate = rate; utt.volume = vol;
+            utt.onend = () => setTimeout(speakReview, 1500);
+            window.speechSynthesis.speak(utt);
+          }
+          speakReview();
+        }
+      }
+    }
+
+
     speak('warn');
     showToast('⚠️ Signal changing soon!', '#f59e0b');
   } else if (phase === 'ew-green' || phase === 'ns-green') {
     speak('stop');
+    // Light just went green for vehicles = red for peds.
+    // If a crosser refused to leave after the full warning, fire everything now.
+    if (window._triagePending && !window._triageDispatched) {
+      window._triageDispatched = true;
+      const pedId = window._triagePedId != null ? window._triagePedId + 1 : '?';
+      // Take photo using stored bbox
+      if (window._triageBbox) {
+        captureJaywalkerSnapshot(window._triageBbox, window._triagePedId || 0);
+      }
+      sfLogJaywalk('VIOLATION', `Non-compliant crosser #${pedId} — still in crosswalk when light turned green. Triage dispatched.`);
+      addDetectionItem('🐢', 'Non-compliant crosser', 'Still crossing at red — flagged & triage dispatched', 'jay');
+      logEvent('timeout', false);
+      const triagePayload = {
+        event: 'crosswalk_refusal',
+        timestamp: new Date().toISOString(),
+        pedestrian_id: pedId,
+        location: document.getElementById('site-location')?.value || 'Hen-Tersection Unit',
+        severity: 'HIGH',
+        description: `Pedestrian #${pedId} remained in crosswalk after full extended warning and final red light. Video evidence captured.`,
+        video_evidence: true,
+      };
+      fetch('/api/triage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(triagePayload)
+      }).catch(() => {});
+      addDetectionItem('🚨', 'Alert Dispatched', 'Triage notified — help is on the way', 'jay');
+      showToast('🚨 Triage alert dispatched — help en route', '#ef4444');
+      // Reassure the pedestrian
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const rate = parseFloat(document.getElementById('r-speech-rate')?.value || 9) / 10;
+        const vol  = parseFloat(document.getElementById('r-vol')?.value || 9) / 10;
+        const msgs = [
+          'Help is on the way. Someone will be with you shortly.',
+          'Help is on the way. Someone will be with you shortly.',
+          'Help is on the way. Someone will be with you shortly.'
+        ];
+        let mIdx2 = 0;
+        function speakHelp() {
+          if (mIdx2 >= msgs.length) return;
+          const utt = new SpeechSynthesisUtterance(msgs[mIdx2++]);
+          utt.rate = rate; utt.volume = vol;
+          utt.onend = () => setTimeout(speakHelp, 1500);
+          window.speechSynthesis.speak(utt);
+        }
+        speakHelp();
+      }
+    }
   }
   // Fire sim hook if available
   if (typeof simPhaseHook === 'function') simPhaseHook(phase);
@@ -1771,8 +1982,114 @@ function triggerCrossNow() {
 
 setPhase('ew-green');
 
-// ═══════════════════════════════════════
-// CAMERA & DETECTION
+// ─── SNOWFLAKE INTEGRATION ───
+// Simulates Snowflake DB logging with SQL-compatible schema
+// In production, replace fetch calls with your Snowflake REST endpoint or backend proxy
+const SNOWFLAKE_CONFIG = {
+  account: '', // e.g. 'xy12345.us-east-1'
+  warehouse: 'CROSSWALK_WH',
+  database: 'SMART_CITY',
+  schema: 'TRAFFIC_LOGS',
+  enabled: false, // set to true and provide account/token to enable real logging
+};
+
+// Local buffer of pending Snowflake events (shown in DB panel)
+let sfEventBuffer = [];
+let sfConnected = false;
+
+function sfLog(table, data) {
+  const ts = new Date().toISOString();
+  const record = { table, ts, data, status: SNOWFLAKE_CONFIG.enabled ? 'sending' : 'buffered' };
+  sfEventBuffer.unshift(record);
+  if (sfEventBuffer.length > 100) sfEventBuffer.pop();
+  renderSFLog();
+
+  if (!SNOWFLAKE_CONFIG.enabled) return;
+
+  // Real Snowflake REST API call (requires backend proxy due to CORS)
+  // Replace '/api/snowflake' with your proxy endpoint
+  fetch('/api/snowflake', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      warehouse: SNOWFLAKE_CONFIG.warehouse,
+      database: SNOWFLAKE_CONFIG.database,
+      schema: SNOWFLAKE_CONFIG.schema,
+      table,
+      record: { ...data, timestamp: ts }
+    })
+  }).then(r => {
+    record.status = r.ok ? 'sent' : 'error';
+    renderSFLog();
+  }).catch(() => {
+    record.status = 'error';
+    renderSFLog();
+  });
+}
+
+function sfLogCrossing(pedType, durationSeconds, wasExtended) {
+  sfLog('CROSSING_LOGS', {
+    pedestrian_type: pedType,
+    duration_seconds: durationSeconds,
+    was_light_extended: wasExtended,
+  });
+}
+
+function sfLogJaywalk(severity, description) {
+  sfLog('JAYWALKING_VIOLATIONS', {
+    severity,
+    description,
+  });
+}
+
+function renderSFLog() {
+  const el = document.getElementById('sf-event-list');
+  if (!el) return;
+  if (!sfEventBuffer.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:0.72rem;text-align:center;padding:20px">No events yet</div>';
+    return;
+  }
+  const statusColors = { sent: 'var(--go)', buffered: 'var(--muted)', sending: 'var(--warn)', error: 'var(--stop)' };
+  el.innerHTML = sfEventBuffer.slice(0, 50).map(e => {
+    const col = statusColors[e.status] || 'var(--muted)';
+    const timeStr = e.ts.split('T')[1].split('.')[0];
+    const dataStr = Object.entries(e.data).map(([k,v]) => `${k}=${JSON.stringify(v)}`).join(', ');
+    return `<div class="sim-evt" style="border-left:2px solid ${col};padding-left:6px;margin-bottom:3px">
+      <span class="sim-evt-time">${timeStr}</span>
+      <div style="flex:1;min-width:0">
+        <div style="color:${col};font-size:0.65rem">${e.table} · ${e.status.toUpperCase()}</div>
+        <div style="font-size:0.62rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${dataStr}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function testSFConnection() {
+  const btn = document.getElementById('sf-test-btn');
+  const status = document.getElementById('sf-status');
+  if (btn) btn.textContent = 'Testing…';
+  sfLog('JAYWALKING_VIOLATIONS', { severity: 'INFO', description: 'INTEGRATION_TEST: Connection check from Hen-Tersection v7' });
+  setTimeout(() => {
+    if (btn) btn.textContent = '🔌 Test Connection';
+    if (status) {
+      status.textContent = SNOWFLAKE_CONFIG.enabled ? '✓ Event sent to Snowflake' : '⚠ Buffered (enable real endpoint in config)';
+      status.style.color = SNOWFLAKE_CONFIG.enabled ? 'var(--go)' : 'var(--warn)';
+    }
+  }, 800);
+}
+
+function saveSFConfig() {
+  const acct = document.getElementById('sf-account')?.value?.trim();
+  if (acct) {
+    SNOWFLAKE_CONFIG.account = acct;
+    SNOWFLAKE_CONFIG.enabled = true;
+    sfConnected = true;
+    document.getElementById('sf-status').textContent = `✓ Config saved — account: ${acct}`;
+    document.getElementById('sf-status').style.color = 'var(--go)';
+  }
+  showToast('💾 Snowflake config updated', '#3b82f6');
+}
+
 // ═══════════════════════════════════════
 async function loadModel() {
   try {
@@ -1870,18 +2187,48 @@ function stopCamera() {
 let lastDetectionLog = 0;
 let lastMobilityCheck = 0;
 let prevPersonCount = 0;
-// Pedestrian tracking: track active walkers so we don't re-log the same person each frame
-let trackedPedestrians = []; // [{id, bbox, lastSeen, logged}]
+// ── IMPROVED PEDESTRIAN TRACKER (IoU + centroid matching) ──
+// Tracks unique pedestrians across frames using bounding-box overlap to prevent duplication
+let trackedPedestrians = []; // [{id, bbox:[x,y,w,h], cx, cy, lastSeen, loggedNormal, loggedJay, jayStartTime, conf, seenThisFrame}]
 let pedIdCounter = 0;
-const PED_MATCH_DIST = 80;   // px - how close a detection must be to count as same person
-const PED_EXPIRY_MS  = 3000; // remove track if unseen for this long
+const PED_IOU_THRESHOLD = 0.25;  // minimum IoU to match same person
+const PED_CENTROID_DIST = 100;   // fallback: max centroid distance for match (px)
+const PED_EXPIRY_MS     = 2500;  // remove track if unseen for this long
+const JAY_VIOLATION_SEC = 3;     // seconds in crosswalk on red before RED-light trigger
+
+function iouBBox(a, b) {
+  // a, b are [x, y, w, h]
+  const ax2 = a[0]+a[2], ay2 = a[1]+a[3];
+  const bx2 = b[0]+b[2], by2 = b[1]+b[3];
+  const ix1 = Math.max(a[0], b[0]), iy1 = Math.max(a[1], b[1]);
+  const ix2 = Math.min(ax2, bx2),   iy2 = Math.min(ay2, by2);
+  if (ix2 <= ix1 || iy2 <= iy1) return 0;
+  const inter = (ix2-ix1)*(iy2-iy1);
+  const unionA = a[2]*a[3], unionB = b[2]*b[3];
+  return inter / (unionA + unionB - inter);
+}
+
+function matchPedestrian(pred) {
+  const [bx, by, bw, bh] = pred.bbox;
+  const pcx = bx + bw/2, pcy = by + bh/2;
+  let best = null, bestScore = -1;
+  trackedPedestrians.forEach(t => {
+    const iou = iouBBox(pred.bbox, t.bbox);
+    const dist = Math.hypot(t.cx - pcx, t.cy - pcy);
+    // Combined score: prefer IoU, fallback to distance
+    const score = iou > PED_IOU_THRESHOLD ? iou + 1 : (dist < PED_CENTROID_DIST ? (PED_CENTROID_DIST - dist) / PED_CENTROID_DIST : -1);
+    if (score > bestScore) { bestScore = score; best = t; }
+  });
+  return bestScore > 0 ? best : null;
+}
 
 async function detect() {
   if (!running) return;
 
-  const video = document.getElementById('video');
-  const canvas = document.getElementById('canvas');
-  const ctx = canvas.getContext('2d');
+  try {
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
 
   frameCount++;
   const now = performance.now();
@@ -1892,15 +2239,26 @@ async function detect() {
   }
 
   if (video.readyState === 4) {
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    // Only resize canvas when dimensions actually change — resizing clears context every frame
+    if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+    }
 
-    const predictions = await model.detect(video);
+    let predictions = [];
+    try {
+      predictions = await model.detect(video);
+    } catch(e) {
+      // Model error (e.g. GPU stall with multiple people) — skip frame, keep loop alive
+      console.warn('Detection error (skipping frame):', e);
+      animId = requestAnimationFrame(detect);
+      return;
+    }
+
     const persons = predictions.filter(p => p.class === 'person' &&
       p.score * 100 >= getSettingVal('r-person-thresh', 55));
 
-    // Mobility detection — require actual object detection (no random triggers)
-    // Uses coco-ssd proxies: umbrella (cane proxy), handbag/backpack near person
+    // Mobility detection
     const mobilityObjs = predictions.filter(p =>
       ['umbrella', 'handbag', 'backpack', 'suitcase'].includes(p.class) && p.score > 0.55);
     const hasMobility = mobilityObjs.length > 0 && persons.length > 0;
@@ -1915,50 +2273,48 @@ async function detect() {
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Draw column guides for front-on crosswalk view
+    // Draw column guides
     const cwColL = canvas.width * CW_LEFT_FRAC;
     const cwColR = canvas.width * CW_RIGHT_FRAC;
     ctx.save();
-    // Crosswalk column tint
     ctx.fillStyle = 'rgba(34,197,94,0.04)';
     ctx.fillRect(cwColL, 0, cwColR - cwColL, canvas.height);
-    // Left divider line
     ctx.strokeStyle = 'rgba(59,130,246,0.4)';
     ctx.lineWidth = 1.5; ctx.setLineDash([10, 7]);
     ctx.beginPath(); ctx.moveTo(cwColL, 0); ctx.lineTo(cwColL, canvas.height); ctx.stroke();
-    // Right divider line
     ctx.beginPath(); ctx.moveTo(cwColR, 0); ctx.lineTo(cwColR, canvas.height); ctx.stroke();
     ctx.setLineDash([]);
-    // Labels
+    // Draw text un-mirrored: flip context at canvas center, draw at mirrored x
     ctx.font = '10px DM Mono, monospace';
-    ctx.fillStyle = 'rgba(59,130,246,0.55)';
     ctx.textAlign = 'center';
-    ctx.fillText('WAIT', cwColL / 2, 14);
-    ctx.fillStyle = 'rgba(34,197,94,0.55)';
-    ctx.fillText('CROSSWALK', cwColL + (cwColR - cwColL) / 2, 14);
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
+    // Mirror x: newX = canvas.width - originalX
+    const mL = canvas.width - cwColL / 2;
+    const mC = canvas.width - (cwColL + (cwColR - cwColL) / 2);
+    const mR = canvas.width - (cwColR + (canvas.width - cwColR) / 2);
     ctx.fillStyle = 'rgba(59,130,246,0.55)';
-    ctx.fillText('WAIT', cwColR + (canvas.width - cwColR) / 2, 14);
-    ctx.textAlign = 'left';
+    ctx.fillText('WAIT', mL, 14);
+    ctx.fillStyle = 'rgba(34,197,94,0.55)';
+    ctx.fillText('CROSSWALK', mC, 14);
+    ctx.fillStyle = 'rgba(59,130,246,0.55)';
+    ctx.fillText('WAIT', mR, 14);
     ctx.restore();
 
-    // Draw crossing zone overlay (from settings)
     drawZoneOverlay(ctx, canvas.width, canvas.height);
 
+    // Draw bounding boxes
     persons.forEach((pred, i) => {
       const [x,y,w,h] = pred.bbox;
       const conf = Math.round(pred.score * 100);
       const isMobility = mobilityDetected && i === 0;
-
-      // Front-on: person is a jaywalker if their centre X is in the crosswalk column during vehicle green
       const personCenterX = x + w / 2;
-      const cwColLeft  = canvas.width * CW_LEFT_FRAC;
-      const cwColRight = canvas.width * CW_RIGHT_FRAC;
-      const isInCrosswalk = personCenterX >= cwColLeft && personCenterX <= cwColRight;
+      const isInCrosswalk = personCenterX >= cwColL && personCenterX <= cwColR;
       const isVehicleGreenNow = crossingPhase === 'ew-green' || crossingPhase === 'ns-green';
       const isJay = isVehicleGreenNow && isInCrosswalk;
-
       const color = isJay ? '#ef4444' : isMobility ? '#3b82f6' : '#22c55e';
 
+      ctx.save();
       ctx.strokeStyle = color;
       ctx.lineWidth = 2;
       ctx.shadowColor = color;
@@ -1966,107 +2322,205 @@ async function detect() {
       ctx.strokeRect(x, y, w, h);
       ctx.shadowBlur = 0;
 
-      // Corner brackets
       const cs = 14;
       ctx.lineWidth = 3;
-      [[x,y],[x+w,y],[x,y+h],[x+w,y+h]].forEach(([cx,cy], ci) => {
+      [[x,y],[x+w,y],[x,y+h],[x+w,y+h]].forEach(([bx,by], ci) => {
         const sx = ci%2===0?1:-1, sy = ci<2?1:-1;
         ctx.beginPath();
-        ctx.moveTo(cx+sx*cs, cy);
-        ctx.lineTo(cx, cy);
-        ctx.lineTo(cx, cy+sy*cs);
+        ctx.moveTo(bx+sx*cs, by);
+        ctx.lineTo(bx, by);
+        ctx.lineTo(bx, by+sy*cs);
         ctx.stroke();
       });
 
-      // Label
       const label = isJay ? `⚠ JAYWALKER` : isMobility ? `🦽 MOBILITY` : `PERSON ${i+1}`;
+      // Draw label un-mirrored (canvas is CSS-flipped, so flip ctx before text)
+      const labelW = 160, labelH = 22;
+      const labelX = canvas.width - x - labelW; // mirror x for flipped canvas
       ctx.fillStyle = 'rgba(0,0,0,0.75)';
-      ctx.fillRect(x, y-22, 160, 22);
+      ctx.fillRect(labelX, y-labelH, labelW, labelH);
+      ctx.save();
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
       ctx.fillStyle = color;
       ctx.font = '11px "DM Mono", monospace';
-      ctx.fillText(`${label}  ${conf}%`, x+6, y-6);
+      ctx.textAlign = 'left';
+      ctx.fillText(`${label}  ${conf}%`, labelX + 6, y - 6);
+      ctx.restore();
+      ctx.restore();
     });
 
-    // ── PEDESTRIAN TRACKER ──
-    // Update existing tracks and match to new detections
-    const nowMs = now; // performance.now() already in ms
-    // Mark all tracks as unseen this frame
+    // ── PEDESTRIAN TRACKER (IoU-based) ──
+    const nowMs = now;
     trackedPedestrians.forEach(t => t.seenThisFrame = false);
 
     persons.forEach((pred) => {
       const [bx, by, bw2, bh2] = pred.bbox;
       const pcx = bx + bw2/2, pcy = by + bh2/2;
-      // Find closest existing track
-      let best = null, bestDist = PED_MATCH_DIST;
-      trackedPedestrians.forEach(t => {
-        const d = Math.hypot(t.cx - pcx, t.cy - pcy);
-        if (d < bestDist) { bestDist = d; best = t; }
-      });
-      if (best) {
-        // Update existing track
-        best.cx = pcx; best.cy = pcy;
-        best.lastSeen = nowMs;
-        best.seenThisFrame = true;
-        best.conf = pred.score;
+      const existing = matchPedestrian(pred);
+      if (existing) {
+        existing.bbox = [bx, by, bw2, bh2];
+        existing.cx = pcx; existing.cy = pcy;
+        existing.lastSeen = nowMs;
+        existing.seenThisFrame = true;
+        existing.conf = pred.score;
       } else {
-        // New pedestrian
-        const ped = { id: pedIdCounter++, cx: pcx, cy: pcy, lastSeen: nowMs, seenThisFrame: true, conf: pred.score, loggedNormal: false, loggedJay: false };
+        const ped = {
+          id: pedIdCounter++, bbox: [bx, by, bw2, bh2],
+          cx: pcx, cy: pcy,
+          lastSeen: nowMs, seenThisFrame: true, conf: pred.score,
+          loggedNormal: false, loggedJay: false, capturedPhoto: false,
+          jayStartTime: null,
+        };
         trackedPedestrians.push(ped);
-        // Log new pedestrian arrival once
         const type = mobilityDetected ? 'mobility' : 'normal';
         addDetectionItem(mobilityDetected?'🦽':'🚶', `Pedestrian #${ped.id+1}`,
           `Conf: ${Math.round(pred.score*100)}%`, type);
       }
     });
 
-    // Expire stale tracks
     trackedPedestrians = trackedPedestrians.filter(t => nowMs - t.lastSeen < PED_EXPIRY_MS);
 
-    // ── JAYWALKER CHECK (front-on camera: person in crosswalk column during red) ──
-    // Camera faces crosswalk straight on. Three horizontal columns:
-    //   Left pavement  : cx < canvas.width * CW_LEFT_FRAC
-    //   Crosswalk      : CW_LEFT_FRAC ≤ cx ≤ CW_RIGHT_FRAC  ← jaywalking if vehicle green
-    //   Right pavement : cx > canvas.width * CW_RIGHT_FRAC
-    // If a custom crosswalk zone is drawn in Admin, its X bounds override the defaults.
-    const isVehicleGreen = crossingPhase === 'ew-green' || crossingPhase === 'ns-green';
-    if (isVehicleGreen && isToggleOn('t-jay-log')) {
-      const delay = getSettingVal('r-jay-buffer', 3);
-      const cwZone = zoneShapes.find(z => z.type === 'crosswalk');
-      let jayLeft, jayRight;
-      if (cwZone) {
-        const scaleX = canvas.width / 800;
-        jayLeft  = cwZone.x * scaleX;
-        jayRight = (cwZone.x + cwZone.w) * scaleX;
-      } else {
-        jayLeft  = canvas.width  * CW_LEFT_FRAC;
-        jayRight = canvas.width  * CW_RIGHT_FRAC;
+    // ── SMART SIGNAL LOGIC ──
+    const cwZoneS = zoneShapes.find(z => z.type === 'crosswalk');
+    const smLeft  = cwZoneS ? cwZoneS.x * (canvas.width/800) : cwColL;
+    const smRight = cwZoneS ? (cwZoneS.x+cwZoneS.w) * (canvas.width/800) : cwColR;
+
+    const anyoneInCrosswalk = trackedPedestrians.some(p => p.seenThisFrame && p.cx >= smLeft && p.cx <= smRight);
+    const anyoneWaiting     = trackedPedestrians.some(p => p.seenThisFrame && (p.cx < smLeft || p.cx > smRight));
+    const isVehicleGreenNow2 = crossingPhase === 'ew-green' || crossingPhase === 'ns-green';
+
+    // 1. EXTEND GREEN — no one waiting: add time to green, up to 2× the base duration
+    if (isVehicleGreenNow2 && !anyoneWaiting && persons.length === 0) {
+      if (!window._greenExtendedThisCycle && phaseTimer <= 8 && phaseTimer > 0) {
+        window._greenExtendedThisCycle = true;
+        const ext = Math.min(getSettingVal('r-green-phase', 45), phaseTimer + 15);
+        phaseTimer = ext;
+        phaseMax = Math.max(phaseMax, ext);
+        updateTimerUI();
+        showToast('🟢 No pedestrians waiting — green extended', '#22c55e');
       }
-      trackedPedestrians.forEach(ped => {
-        if (ped.loggedJay || !ped.seenThisFrame || phaseTimer >= phaseMax - delay) return;
-        // Person must be horizontally inside the crosswalk column
-        if (ped.cx < jayLeft || ped.cx > jayRight) return;
-        ped.loggedJay = true;
-        statJay++;
-        document.getElementById('stat-jay').textContent = statJay;
-        addDetectionItem('⚠️', 'Jaywalker', 'In crosswalk on red', 'jay');
-        logEvent('jaywalk', false);
-        showToast('⚠️ Jaywalker in crosswalk — yellow alert triggered.', '#ef4444');
-        clearInterval(countdownTimer);
-        const nextYellow = crossingPhase === 'ew-green' ? 'ew-yellow' : 'ns-yellow';
-        setPhase(nextYellow);
-      });
+    } else if (isVehicleGreenNow2 && anyoneWaiting) {
+      window._greenExtendedThisCycle = false; // reset so it won't extend again this cycle
     }
 
-    // ── PEDESTRIAN WAITING VISUAL CUE (during car green) ──
+    // 2. PEDESTRIAN CLEARED — cut walk phase early (with 3s grace)
+    if (crossingPhase === 'pedestrian-walk' && phaseTimer > 4) {
+      if (!anyoneInCrosswalk && persons.length === 0) {
+        if (!window._pedClearedAt) {
+          window._pedClearedAt = nowMs;
+        } else if (nowMs - window._pedClearedAt > 3000) {
+          window._pedClearedAt = null;
+          showToast('✅ Crosswalk clear — ending walk phase early', '#22c55e');
+          clearInterval(countdownTimer);
+          setPhase('pedestrian-warn');
+        }
+      } else {
+        window._pedClearedAt = null;
+      }
+    }
+
+    // 3. // Non-compliant crosser is flagged in onPhaseStart('pedestrian-warn') after extension, when light goes red
+
+    // Reset pedClearedAt when we're not in walk phase
+    if (crossingPhase !== 'pedestrian-walk') window._pedClearedAt = null;
+
+    // ── JAYWALKER CHECK ──
+    const isVehicleGreen = crossingPhase === 'ew-green' || crossingPhase === 'ns-green';
+    const isVehicleYellow = crossingPhase === 'ew-yellow' || crossingPhase === 'ns-yellow';
+    if ((isVehicleGreen || isVehicleYellow) && isToggleOn('t-jay-log')) {
+      const cwZone = zoneShapes.find(z => z.type === 'crosswalk');
+      const jayLeft  = cwZone ? cwZone.x * (canvas.width/800) : cwColL;
+      const jayRight = cwZone ? (cwZone.x+cwZone.w) * (canvas.width/800) : cwColR;
+
+      trackedPedestrians.forEach(ped => {
+        if (!ped.seenThisFrame) { ped.jayStartTime = null; return; }
+        const inCrosswalk = ped.cx >= jayLeft && ped.cx <= jayRight;
+        if (!inCrosswalk) { ped.jayStartTime = null; return; }
+
+        // In crosswalk during green → immediately yellow
+        if (!ped.loggedJay && (crossingPhase === 'ew-green' || crossingPhase === 'ns-green')) {
+          ped.loggedJay = true;
+          ped.jayPhase = crossingPhase; // save BEFORE setPhase changes it
+          statJay++;
+          document.getElementById('stat-jay').textContent = statJay;
+          addDetectionItem('⚠️', 'Jaywalker', 'In crosswalk — YELLOW triggered', 'jay');
+          logEvent('jaywalk', false);
+          sfLogJaywalk('WARNING', `Jaywalker detected — auto yellow triggered`);
+          showToast('⚠️ Jaywalker detected — yellow light triggered!', '#f59e0b');
+          const nextYellow = ped.jayPhase === 'ew-green' ? 'ew-yellow' : 'ns-yellow';
+          window._jaywalkerYellow = true;
+          window._jaywalkerYellowRevertTo = ped.jayPhase;
+          clearInterval(countdownTimer);
+          setPhase(nextYellow);
+          ped.jayStartTime = nowMs;
+        }
+
+        // Start dwell timer once in yellow
+        if (ped.jayStartTime === null && (crossingPhase === 'ew-yellow' || crossingPhase === 'ns-yellow')) {
+          ped.jayStartTime = nowMs;
+        }
+
+        // 3s dwell → force pedestrian-walk + snapshot
+        if (ped.jayStartTime !== null && !ped.capturedPhoto) {
+          const dwellSec = (nowMs - ped.jayStartTime) / 1000;
+          if (dwellSec >= JAY_VIOLATION_SEC) {
+            ped.capturedPhoto = true;
+            captureJaywalkerSnapshot(ped.bbox, ped.id);
+            sfLogJaywalk('VIOLATION', `Jaywalker #${ped.id+1} — ${JAY_VIOLATION_SEC}s violation — photo captured`);
+            showToast('📸 3s violation — photo captured, forcing red!', '#ef4444');
+            clearInterval(countdownTimer);
+            setPhase('pedestrian-walk');
+          }
+        }
+      });
+
+      // Jaywalker LEFT crosswalk before 3s → revert yellow back to green immediately
+      if (window._jaywalkerYellow && (crossingPhase === 'ew-yellow' || crossingPhase === 'ns-yellow')) {
+        const anyJayStillIn = trackedPedestrians.some(p =>
+          p.loggedJay && !p.capturedPhoto && p.seenThisFrame &&
+          p.cx >= jayLeft && p.cx <= jayRight
+        );
+        if (!anyJayStillIn) {
+          // Check none have hit the 3s threshold either
+          const anyViolation = trackedPedestrians.some(p => {
+            if (!p.loggedJay || p.capturedPhoto || p.jayStartTime === null) return false;
+            return (nowMs - p.jayStartTime) / 1000 >= JAY_VIOLATION_SEC;
+          });
+          if (!anyViolation) {
+            window._jaywalkerYellow = false;
+            const revert = window._jaywalkerYellowRevertTo || 'ew-green';
+            window._jaywalkerYellowRevertTo = null;
+            trackedPedestrians.forEach(p => { if (p.loggedJay && !p.capturedPhoto) { p.jayStartTime = null; p.loggedJay = false; } });
+            showToast('✅ Jaywalker cleared — reverting to green', '#22c55e');
+            clearInterval(countdownTimer);
+            setPhase(revert);
+            phaseTimer = Math.max(8, Math.floor(getSettingVal('r-green-phase', 45) * 0.4));
+            phaseMax = phaseTimer;
+            updateTimerUI();
+          }
+        }
+      }
+    }
+
+    // ── PEDESTRIAN WAITING VISUAL CUE ──
     updatePedWaitingCue(trackedPedestrians.length, isVehicleGreen);
+
+    updateVoiceBars(persons.length > 0);
+  } // end if (video.readyState === 4)
+
+  } catch(e) {
+    console.warn('detect() error (frame skipped):', e);
+  }
+
+  animId = requestAnimationFrame(detect);
+}
 
 function updatePedWaitingCue(pedCount, isVehicleGreen) {
   let cueEl = document.getElementById('ped-waiting-cue');
   if (!cueEl) return;
   if (!isVehicleGreen) { cueEl.style.display = 'none'; return; }
 
-  // Only count people standing in the wait zones (left or right pavement columns)
-  // i.e. NOT already in the crosswalk — those are jaywalkers, handled separately
   const cw = document.getElementById('canvas');
   const canvasW = cw ? cw.width : 1280;
   const cwL = canvasW * CW_LEFT_FRAC;
@@ -2078,22 +2532,84 @@ function updatePedWaitingCue(pedCount, isVehicleGreen) {
   if (waitingCount > 0) {
     cueEl.style.display = 'flex';
     cueEl.querySelector('.pwc-count').textContent = waitingCount;
-    // Smart wait reduction: 2+ people waiting, shorten the green
-    if (isToggleOn('t-smart-queue') && waitingCount >= 2 && phaseTimer > 8) {
-      phaseTimer = Math.max(6, Math.floor(phaseTimer * 0.4));
+    cueEl.querySelector('.pwc-label').textContent = `pedestrian(s) waiting`;
+    // Reduce green proportionally based on how many are waiting — triggers immediately
+    // More people = more aggressive reduction, applied once per cycle
+    if (isToggleOn('t-smart-queue') && phaseTimer > 8 && !window._greenReducedThisCycle) {
+      window._greenReducedThisCycle = true;
+      // 1 person → cut to 70%, 2 → 55%, 3+ → 40%, all min 6s
+      const factor = waitingCount === 1 ? 0.70 : waitingCount === 2 ? 0.55 : 0.40;
+      phaseTimer = Math.max(6, Math.floor(phaseTimer * factor));
+      phaseMax = Math.max(phaseMax, phaseTimer);
       updateTimerUI();
-      showToast(`👀 ${waitingCount} pedestrian(s) waiting — green time reduced`, '#f5a623');
+      showToast(`👀 ${waitingCount} pedestrian(s) waiting — green cut to ${phaseTimer}s`, '#f5a623');
     }
   } else {
     cueEl.style.display = 'none';
   }
 }
 
-    // Update voice bars based on detection activity
-    updateVoiceBars(persons.length > 0);
+// ── SNAPSHOT CAPTURE ──
+function captureJaywalkerSnapshot(bbox, pedId) {
+  const video = document.getElementById('video');
+  const snap = document.createElement('canvas');
+  snap.width  = video.videoWidth  || 640;
+  snap.height = video.videoHeight || 480;
+  const sCtx = snap.getContext('2d');
+  // Mirror to match displayed video
+  sCtx.save();
+  sCtx.scale(-1, 1);
+  sCtx.translate(-snap.width, 0);
+  sCtx.drawImage(video, 0, 0);
+  sCtx.restore();
+  // Red overlay box for the jaywalker
+  if (bbox) {
+    const [bx,by,bw,bh] = bbox;
+    const mirrorX = snap.width - bx - bw; // mirror the X for flipped canvas
+    sCtx.strokeStyle = '#ef4444';
+    sCtx.lineWidth = 3;
+    sCtx.shadowColor = '#ef4444'; sCtx.shadowBlur = 10;
+    sCtx.strokeRect(mirrorX, by, bw, bh);
+    sCtx.shadowBlur = 0;
+    sCtx.fillStyle = 'rgba(239,68,68,0.85)';
+    sCtx.fillRect(mirrorX, by - 22, 160, 22);
+    sCtx.fillStyle = '#fff';
+    sCtx.font = '11px "DM Mono", monospace';
+    sCtx.fillText(`📸 VIOLATION — PED #${pedId+1}`, mirrorX + 5, by - 6);
+    // Timestamp
+    const ts = new Date().toLocaleString();
+    sCtx.fillStyle = 'rgba(0,0,0,0.7)';
+    sCtx.fillRect(0, snap.height - 22, 260, 22);
+    sCtx.fillStyle = '#ef4444';
+    sCtx.font = '10px "DM Mono", monospace';
+    sCtx.fillText(`HEN-TERSECTION VIOLATION ${ts}`, 6, snap.height - 6);
   }
 
-  animId = requestAnimationFrame(detect);
+  // Download the snapshot
+  snap.toBlob(blob => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `jaywalk-violation-${Date.now()}.png`;
+    a.click();
+  }, 'image/png');
+
+  // Also show thumbnail in detection list
+  const dataUrl = snap.toDataURL('image/jpeg', 0.7);
+  const list = document.getElementById('detection-list');
+  const item = document.createElement('div');
+  item.className = 'det-item';
+  const now2 = new Date();
+  const t2 = [now2.getHours(),now2.getMinutes(),now2.getSeconds()].map(v=>String(v).padStart(2,'0')).join(':');
+  item.innerHTML = `
+    <img src="${dataUrl}" style="width:50px;height:35px;object-fit:cover;border-radius:3px;border:1px solid #ef4444;flex-shrink:0">
+    <div class="det-info">
+      <div class="det-name" style="color:#ef4444">📸 Photo Captured</div>
+      <div class="det-sub">Ped #${pedId+1} — 3s violation</div>
+    </div>
+    <span class="det-conf jay">PHOTO</span>
+    <span class="det-time">${t2}</span>
+  `;
+  list.insertBefore(item, list.firstChild);
 }
 
 function drawZoneOverlay(ctx, w, h) {
@@ -2181,12 +2697,9 @@ function showToast(msg, borderColor = 'var(--accent)') {
 // ═══════════════════════════════════════
 function addDetectionItem(icon, name, sub, type) {
   const list = document.getElementById('detection-list');
-  if (list.children.length === 1 && list.children[0].tagName !== 'DIV'.toLowerCase()) {
-    // keep going
-  }
-  // Remove placeholder
+  // Safely remove placeholder — check it's still a child before removing
   const placeholder = list.querySelector('[style]');
-  if (placeholder) list.removeChild(placeholder);
+  if (placeholder && placeholder.parentNode === list) list.removeChild(placeholder);
 
   const item = document.createElement('div');
   item.className = 'det-item';
@@ -2753,7 +3266,7 @@ function spawnCarManual(axis) {
 }
 
 // ── SIMULATION VIEW MODE ──
-let simViewMode = 'intersection'; // 'intersection' | 'horizontal' | 'vertical' | 'sideon'
+let simViewMode = 'sideon'; // 'intersection' | 'horizontal' | 'vertical' | 'sideon'
 
 function setSimView(mode) {
   simViewMode = mode;
@@ -3291,15 +3804,15 @@ function drawRoadSideOn() {
   ctx.moveTo(0, roadTop + roadH); ctx.lineTo(w, roadTop + roadH);
   ctx.stroke();
 
-  // Crosswalk stripes at cx
+  // Crosswalk stripes at cx — wider crosswalk, smaller wait zones on sides
   const isGreen  = crossingPhase === 'ew-green';
   const isYellow = crossingPhase === 'ew-yellow';
   const isPedWalk = crossingPhase === 'pedestrian-walk';
   const isPedWarn = crossingPhase === 'pedestrian-warn';
 
-  const CROSS_GAP = 4, SW = 8, SG = 5, nStripes = 5;
-  const CROSS_W = nStripes*(SW+SG) - SG;
-  const SLO = CROSS_GAP + CROSS_W + 8;
+  const CROSS_GAP = 3, SW = 10, SG = 6, nStripes = 7;  // wider stripes, more of them
+  const CROSS_W = nStripes*(SW+SG) - SG;  // ~106px vs original ~57px
+  const SLO = CROSS_GAP + CROSS_W + 6;
 
   ctx.fillStyle = 'rgba(255,255,255,0.22)';
   for (let s = 0; s < nStripes; s++) {
