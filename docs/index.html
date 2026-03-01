@@ -891,7 +891,7 @@ input[type=range] {
     <div class="dot"></div> Live Monitor
   </div>
   <div class="nav-tab" data-page="db" onclick="switchPage('db',this); loadDBData()">
-    📋 Event Log
+    📋 DB Records
   </div>
   <div class="nav-tab" data-page="sim" onclick="switchPage('sim',this); setTimeout(()=>{if(!simRunning){document.getElementById('sim-toggle-btn').click();}},150)">
     🚗 Traffic Sim
@@ -2368,9 +2368,9 @@ let prevPersonCount = 0;
 // Tracks unique pedestrians across frames using bounding-box overlap to prevent duplication
 let trackedPedestrians = []; // [{id, bbox:[x,y,w,h], cx, cy, lastSeen, loggedNormal, loggedJay, jayStartTime, conf, seenThisFrame}]
 let pedIdCounter = 0;
-const PED_IOU_THRESHOLD = 0.25;  // minimum IoU to match same person
-const PED_CENTROID_DIST = 100;   // fallback: max centroid distance for match (px)
-const PED_EXPIRY_MS     = 2500;  // remove track if unseen for this long
+const PED_IOU_THRESHOLD = 0.15;  // lower threshold — moving peds have less bbox overlap
+const PED_CENTROID_DIST = 160;   // larger distance — moving peds can shift significantly between frames
+const PED_EXPIRY_MS     = 3500;  // keep track alive longer to survive multi-frame detection gaps
 const JAY_VIOLATION_SEC = 3;     // seconds in crosswalk on red before RED-light trigger
 
 function iouBBox(a, b) {
@@ -2436,86 +2436,39 @@ async function detect() {
       p.score * 100 >= getSettingVal('r-person-thresh', 55));
 
     // ── MOBILITY AID DETECTION (multi-signal) ──
-    // COCO-SSD doesn't have wheelchair/cane classes directly.
-    // We use a combination of signals:
-    //   1. 'chair' detected overlapping or very near a person bbox → wheelchair
-    //   2. 'bicycle' detected near a person → mobility scooter / bike
-    //   3. 'baseball bat', 'tennis racket', 'umbrella' near a person → possible cane/walker
-    //   4. Person bbox aspect ratio: w/h > 0.55 → seated/wheelchair posture
-    //   5. Slow cross-frame movement of tracked person (tracked via mobilitySpeedBuffer)
-    //   6. Person bbox significantly shorter than average height (seated)
+    // Mobility detection — object overlap only.
+    // COCO-SSD cannot reliably infer disability from body pose or movement speed —
+    // every heuristic approach (aspect ratio, height, slow frames, nearby objects) produces
+    // false positives on normal standing pedestrians. We only trigger on unambiguous
+    // object evidence: a wheelchair (chair bbox overlapping person) or mobility scooter
+    // (bicycle bbox overlapping person), both at high model confidence.
 
-    const allPreds = predictions; // includes non-person classes
+    const allPreds = predictions;
+    let mobilityReason = '';
 
-    // Helper: do two bboxes overlap or are they within 80px?
-    function bboxNear(a, b, margin = 80) {
-      const [ax,ay,aw,ah] = a, [bx,by,bw,bh] = b;
-      return !(ax+aw+margin < bx || bx+bw+margin < ax || ay+ah+margin < by || by+bh+margin < ay);
+    // True bbox intersection — must share actual pixels, not just be nearby
+    function bboxIntersects(a, b) {
+      return a[0] < b[0]+b[2] && a[0]+a[2] > b[0] &&
+             a[1] < b[1]+b[3] && a[1]+a[3] > b[1];
     }
 
-    let mobilitySignals = [];
-
     persons.forEach(person => {
-      const [px,py,pw,ph] = person.bbox;
-      const aspectRatio = pw / ph;
-
-      // Signal 1: chair/sofa nearby → wheelchair
-      const chairNear = allPreds.some(p =>
-        (p.class === 'chair' || p.class === 'couch') && p.score > 0.35 && bboxNear(person.bbox, p.bbox, 60)
-      );
-      if (chairNear) mobilitySignals.push({ reason: 'Wheelchair detected (chair proximity)', ped: person });
-
-      // Signal 2: bicycle nearby → mobility scooter
-      const bikeNear = allPreds.some(p =>
-        p.class === 'bicycle' && p.score > 0.4 && bboxNear(person.bbox, p.bbox, 80)
-      );
-      if (bikeNear) mobilitySignals.push({ reason: 'Mobility scooter detected (bicycle proximity)', ped: person });
-
-      // Signal 3: cane-like objects (COCO often misclassifies canes as sports items)
-      const caneProxy = allPreds.some(p =>
-        ['baseball bat','tennis racket','umbrella','skateboard','skis','ski'].includes(p.class) &&
-        p.score > 0.3 && bboxNear(person.bbox, p.bbox, 70)
-      );
-      if (caneProxy) mobilitySignals.push({ reason: 'Walking aid detected (cane/support)', ped: person });
-
-      // Signal 4: aspect ratio — wheelchair users appear wider relative to height
-      if (aspectRatio > 0.58 && ph > 60) {
-        mobilitySignals.push({ reason: 'Wheelchair posture detected (seated aspect ratio)', ped: person });
+      if (mobilityReason) return;
+      // Wheelchair: chair bbox must actually intersect the person bbox
+      if (allPreds.some(p => p.class === 'chair' && p.score > 0.6 && bboxIntersects(person.bbox, p.bbox))) {
+        mobilityReason = 'Wheelchair detected';
       }
-
-      // Signal 5: person bbox is unusually short compared to frame height → seated
-      const frameFrac = ph / (canvas.height || 480);
-      const avgStandingFrac = 0.45; // typical standing person ~ 45% of frame height
-      if (frameFrac < avgStandingFrac * 0.65 && frameFrac > 0.08 && aspectRatio > 0.45) {
-        mobilitySignals.push({ reason: 'Mobility aid detected (low profile / seated silhouette)', ped: person });
+      // Mobility scooter: bicycle bbox must actually intersect the person bbox
+      else if (allPreds.some(p => p.class === 'bicycle' && p.score > 0.65 && bboxIntersects(person.bbox, p.bbox))) {
+        mobilityReason = 'Mobility scooter detected';
       }
     });
 
-    // Signal 6: slow movement from tracker history
-    trackedPedestrians.forEach(tp => {
-      if (!tp.prevCx) tp.prevCx = tp.cx;
-      const moveDelta = Math.abs(tp.cx - tp.prevCx);
-      tp.prevCx = tp.cx;
-      if (!tp.slowFrames) tp.slowFrames = 0;
-      if (moveDelta < 2.5 && tp.seenThisFrame) {
-        tp.slowFrames++;
-      } else {
-        tp.slowFrames = Math.max(0, tp.slowFrames - 1);
-      }
-      // 45+ consecutive near-static frames (~1.5s at 30fps) with person in crosswalk area → cane/mobility
-      if (tp.slowFrames > 45 && !tp.mobilityFlagged) {
-        tp.mobilityFlagged = true;
-        mobilitySignals.push({ reason: 'Slow movement detected — possible cane/walker', ped: null });
-      }
-    });
-
-    const hasMobility = mobilitySignals.length > 0 && persons.length > 0;
-    if (hasMobility && now - lastMobilityCheck > 8000) {
+    if (mobilityReason && persons.length > 0 && now - lastMobilityCheck > 8000) {
       mobilityDetected = true;
       lastMobilityCheck = now;
-      const topReason = mobilitySignals[0].reason;
       setTimeout(() => { mobilityDetected = false; }, 20000);
-      addDetectionItem('🦽', 'Mobility Aid Detected', topReason, 'mobility');
+      addDetectionItem('🦽', 'Mobility Aid Detected', mobilityReason, 'mobility');
       statMobility++;
       document.getElementById('stat-mobility').textContent = statMobility;
     }
@@ -2693,9 +2646,17 @@ async function detect() {
       const jayRight = cwZone ? (cwZone.x+cwZone.w) * (canvas.width/800) : cwColR;
 
       trackedPedestrians.forEach(ped => {
-        if (!ped.seenThisFrame) { ped.jayStartTime = null; return; }
+        // Don't reset the jayStartTime on a single missed frame — brief detection gaps
+        // (person moving, partial occlusion) would constantly wipe the 3s timer.
+        // The track gets pruned by PED_EXPIRY_MS when they truly leave.
+        if (!ped.seenThisFrame) return;
         const inCrosswalk = ped.cx >= jayLeft && ped.cx <= jayRight;
-        if (!inCrosswalk) { ped.jayStartTime = null; return; }
+        if (!inCrosswalk) {
+          // They've clearly moved out — reset the dwell timer but keep loggedJay
+          // so yellow isn't re-triggered if they step back in
+          ped.jayStartTime = null;
+          return;
+        }
 
         // In crosswalk during green → immediately yellow
         if (!ped.loggedJay && (crossingPhase === 'ew-green' || crossingPhase === 'ns-green')) {
@@ -2733,30 +2694,41 @@ async function detect() {
         }
       });
 
-      // Jaywalker LEFT crosswalk before 3s → revert yellow back to green immediately
+      // Jaywalker LEFT crosswalk before 3s → revert yellow back to green
+      // Use lastSeen instead of seenThisFrame so one dropped detection frame
+      // doesn't falsely trigger a revert (which would reset loggedJay and cause spam)
       if (window._jaywalkerYellow && (crossingPhase === 'ew-yellow' || crossingPhase === 'ns-yellow')) {
+        const JAY_CLEAR_GRACE_MS = 1200; // must be absent this long before reverting
         const anyJayStillIn = trackedPedestrians.some(p =>
-          p.loggedJay && !p.capturedPhoto && p.seenThisFrame &&
+          p.loggedJay && !p.capturedPhoto &&
+          (nowMs - p.lastSeen) < JAY_CLEAR_GRACE_MS &&
           p.cx >= jayLeft && p.cx <= jayRight
         );
         if (!anyJayStillIn) {
-          // Check none have hit the 3s threshold either
-          const anyViolation = trackedPedestrians.some(p => {
-            if (!p.loggedJay || p.capturedPhoto || p.jayStartTime === null) return false;
-            return (nowMs - p.jayStartTime) / 1000 >= JAY_VIOLATION_SEC;
-          });
-          if (!anyViolation) {
-            window._jaywalkerYellow = false;
-            const revert = window._jaywalkerYellowRevertTo || 'ew-green';
-            window._jaywalkerYellowRevertTo = null;
-            trackedPedestrians.forEach(p => { if (p.loggedJay && !p.capturedPhoto) { p.jayStartTime = null; p.loggedJay = false; } });
-            showToast('✅ Jaywalker cleared — reverting to green', '#22c55e');
-            clearInterval(countdownTimer);
-            setPhase(revert);
-            phaseTimer = Math.max(8, Math.floor(getSettingVal('r-green-phase', 45) * 0.4));
-            phaseMax = phaseTimer;
-            updateTimerUI();
+          if (!window._jayGoneAt) {
+            window._jayGoneAt = nowMs;
+          } else if (nowMs - window._jayGoneAt >= JAY_CLEAR_GRACE_MS) {
+            // Check none have hit the 3s threshold either
+            const anyViolation = trackedPedestrians.some(p => {
+              if (!p.loggedJay || p.capturedPhoto || p.jayStartTime === null) return false;
+              return (nowMs - p.jayStartTime) / 1000 >= JAY_VIOLATION_SEC;
+            });
+            if (!anyViolation) {
+              window._jayGoneAt = null;
+              window._jaywalkerYellow = false;
+              const revert = window._jaywalkerYellowRevertTo || 'ew-green';
+              window._jaywalkerYellowRevertTo = null;
+              trackedPedestrians.forEach(p => { if (p.loggedJay && !p.capturedPhoto) { p.jayStartTime = null; p.loggedJay = false; } });
+              showToast('✅ Jaywalker cleared — reverting to green', '#22c55e');
+              clearInterval(countdownTimer);
+              setPhase(revert);
+              phaseTimer = Math.max(8, Math.floor(getSettingVal('r-green-phase', 45) * 0.4));
+              phaseMax = phaseTimer;
+              updateTimerUI();
+            }
           }
+        } else {
+          window._jayGoneAt = null; // they're still in — reset the clear timer
         }
       }
     }
@@ -3394,10 +3366,77 @@ zCanvas.addEventListener('dblclick', e => {
 renderZoneCanvas();
 
 // ═══════════════════════════════════════
-// SAVE SETTINGS
+// SAVE / LOAD SETTINGS (localStorage)
 // ═══════════════════════════════════════
+const SETTINGS_KEY = 'hen-tersection-settings-v1';
+
+const RANGE_IDS = [
+  'r-default-time','r-mobility-ext','r-green-phase','r-yellow-phase',
+  'r-red-phase','r-warn-start','r-min-wait','r-person-thresh',
+  'r-mob-sens','r-jay-buffer','r-speech-rate','r-vol'
+];
+const TOGGLE_IDS = [
+  't-smart-queue','t-slow-extend','t-peak','t-jay-log',
+  't-jay-alert','t-voice','t-flash-dw','t-beep','t-demand','t-sf-enabled'
+];
+const TEXT_IDS = ['msg-walk','msg-mobility','msg-warn','msg-stop'];
+
 function saveSettings() {
-  showToast('✅ Settings saved successfully', '#22c55e');
+  const data = {};
+  RANGE_IDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) data[id] = el.value;
+  });
+  TOGGLE_IDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) data[id] = el.classList.contains('on');
+  });
+  TEXT_IDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) data[id] = el.value;
+  });
+  try {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(data));
+    showToast('✅ Settings saved', '#22c55e');
+  } catch(e) {
+    showToast('⚠️ Could not save settings: ' + e.message, '#f59e0b');
+  }
+}
+
+function loadSettings() {
+  let data;
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (!raw) return;
+    data = JSON.parse(raw);
+  } catch(e) { return; }
+
+  RANGE_IDS.forEach(id => {
+    if (data[id] === undefined) return;
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.value = data[id];
+    // Sync the display label — find the matching rv- element
+    const rvEl = document.getElementById('rv-' + id.slice(2));
+    if (rvEl) {
+      // Re-fire the oninput to update the display value
+      el.dispatchEvent(new Event('input'));
+    }
+  });
+  TOGGLE_IDS.forEach(id => {
+    if (data[id] === undefined) return;
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (data[id]) el.classList.add('on');
+    else el.classList.remove('on');
+    // Special case: snowflake toggle also sets config
+    if (id === 't-sf-enabled') SNOWFLAKE_CONFIG.enabled = data[id];
+  });
+  TEXT_IDS.forEach(id => {
+    if (data[id] === undefined) return;
+    const el = document.getElementById(id);
+    if (el) el.value = data[id];
+  });
 }
 
 // ═══════════════════════════════════════
@@ -4462,6 +4501,7 @@ function simPhaseHook(phase) {
   }
 }
 
+loadSettings();
 seedLog();
 loadModel();
 // Populate camera list on load, and refresh if devices are plugged/unplugged
