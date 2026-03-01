@@ -1055,10 +1055,11 @@ input[type=range] {
           <th>Cross Time</th>
           <th>Confidence</th>
           <th>Notes</th>
+          <th>Image</th>
         </tr>
       </thead>
       <tbody id="log-tbody">
-        <tr><td colspan="6" style="text-align:center; color:var(--muted); padding:40px;">No events yet — start the camera</td></tr>
+        <tr><td colspan="7" style="text-align:center; color:var(--muted); padding:40px;">No events yet — start the camera</td></tr>
       </tbody>
     </table>
   </div>
@@ -1540,19 +1541,26 @@ USE DATABASE SMART_CITY;
 USE SCHEMA TRAFFIC_LOGS;
 
 -- 2. Create the tables
-CREATE OR REPLACE TABLE CROSSING_LOGS (
-  event_id         STRING  DEFAULT uuid_string(),
-  timestamp        TIMESTAMP_NTZ DEFAULT current_timestamp(),
-  pedestrian_type  STRING,
-  duration_seconds FLOAT,
-  was_light_extended BOOLEAN
+CREATE TABLE IF NOT EXISTS CROSSING_LOGS (
+  event_id           STRING        NOT NULL DEFAULT uuid_string(),
+  timestamp          TIMESTAMP_NTZ NOT NULL DEFAULT current_timestamp(),
+  pedestrian_type    STRING,
+  duration_seconds   FLOAT,
+  was_light_extended BOOLEAN,
+  persons_count      INT,
+  confidence_pct     FLOAT,
+  notes              TEXT
 );
 
-CREATE OR REPLACE TABLE JAYWALKING_VIOLATIONS (
-  violation_id  STRING DEFAULT uuid_string(),
-  timestamp     TIMESTAMP_NTZ DEFAULT current_timestamp(),
-  severity      STRING,
-  description   TEXT
+CREATE TABLE IF NOT EXISTS JAYWALKING_VIOLATIONS (
+  violation_id   STRING        NOT NULL DEFAULT uuid_string(),
+  timestamp      TIMESTAMP_NTZ NOT NULL DEFAULT current_timestamp(),
+  severity       STRING,                -- WARNING | VIOLATION | INFO
+  description    TEXT,
+  image_data     TEXT,                  -- base-64 encoded PNG frame
+  image_filename STRING,               -- suggested download filename
+  pedestrian_id  STRING,
+  location       STRING DEFAULT 'Hen-Tersection Unit'
 );</pre>
       </div>
 
@@ -2009,7 +2017,7 @@ function sfLog(table, data) {
 
   // Real Snowflake REST API call (requires backend proxy due to CORS)
   // Replace '/api/snowflake' with your proxy endpoint
-  fetch('/api/snowflake', {
+  fetch('http://localhost:5050/api/snowflake', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -2036,10 +2044,11 @@ function sfLogCrossing(pedType, durationSeconds, wasExtended) {
   });
 }
 
-function sfLogJaywalk(severity, description) {
+function sfLogJaywalk(severity, description, imageDataUrl) {
   sfLog('JAYWALKING_VIOLATIONS', {
     severity,
     description,
+    ...(imageDataUrl ? { image_dataurl: imageDataUrl } : {}),
   });
 }
 
@@ -2455,7 +2464,6 @@ async function detect() {
           statJay++;
           document.getElementById('stat-jay').textContent = statJay;
           addDetectionItem('⚠️', 'Jaywalker', 'In crosswalk — YELLOW triggered', 'jay');
-          logEvent('jaywalk', false);
           sfLogJaywalk('WARNING', `Jaywalker detected — auto yellow triggered`);
           showToast('⚠️ Jaywalker detected — yellow light triggered!', '#f59e0b');
           const nextYellow = ped.jayPhase === 'ew-green' ? 'ew-yellow' : 'ns-yellow';
@@ -2476,8 +2484,8 @@ async function detect() {
           const dwellSec = (nowMs - ped.jayStartTime) / 1000;
           if (dwellSec >= JAY_VIOLATION_SEC) {
             ped.capturedPhoto = true;
-            captureJaywalkerSnapshot(ped.bbox, ped.id);
-            sfLogJaywalk('VIOLATION', `Jaywalker #${ped.id+1} — ${JAY_VIOLATION_SEC}s violation — photo captured`);
+            const capturedDataUrl = captureJaywalkerSnapshot(ped.bbox, ped.id);
+            sfLogJaywalk('VIOLATION', `Jaywalker #${ped.id+1} — ${JAY_VIOLATION_SEC}s violation — photo captured`, capturedDataUrl);
             showToast('📸 3s violation — photo captured, forcing red!', '#ef4444');
             clearInterval(countdownTimer);
             setPhase('pedestrian-walk');
@@ -2595,31 +2603,40 @@ function captureJaywalkerSnapshot(bbox, pedId) {
     sCtx.fillText(`HEN-TERSECTION VIOLATION ${ts}`, 6, snap.height - 6);
   }
 
-  // Download the snapshot
+  // Capture the dataUrl now (synchronously) before the async toBlob
+  const dataUrl = snap.toDataURL('image/png');
+  const filename = `jaywalk-violation-${Date.now()}.png`;
+
+  // Download the snapshot automatically
   snap.toBlob(blob => {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `jaywalk-violation-${Date.now()}.png`;
+    a.download = filename;
     a.click();
   }, 'image/png');
 
-  // Also show thumbnail in detection list
-  const dataUrl = snap.toDataURL('image/jpeg', 0.7);
+  // Add a jaywalk log entry with the captured image (timestamp + download link in table)
+  logEvent('jaywalk', false, dataUrl);
+
+  // Show thumbnail in the sidebar detection list
   const list = document.getElementById('detection-list');
   const item = document.createElement('div');
   item.className = 'det-item';
   const now2 = new Date();
   const t2 = [now2.getHours(),now2.getMinutes(),now2.getSeconds()].map(v=>String(v).padStart(2,'0')).join(':');
+  const thumbUrl = snap.toDataURL('image/jpeg', 0.7);
   item.innerHTML = `
-    <img src="${dataUrl}" style="width:50px;height:35px;object-fit:cover;border-radius:3px;border:1px solid #ef4444;flex-shrink:0">
+    <img src="${thumbUrl}" style="width:50px;height:35px;object-fit:cover;border-radius:3px;border:1px solid #ef4444;flex-shrink:0;cursor:pointer" title="Click to download" onclick="downloadViolationImage('${filename}','${thumbUrl}')">
     <div class="det-info">
       <div class="det-name" style="color:#ef4444">📸 Photo Captured</div>
       <div class="det-sub">Ped #${pedId+1} — 3s violation</div>
     </div>
-    <span class="det-conf jay">PHOTO</span>
+    <a href="${thumbUrl}" download="${filename}" style="color:#ef4444;font-size:0.6rem;font-family:var(--font-mono);text-decoration:none;flex-shrink:0;" title="Download">↓</a>
     <span class="det-time">${t2}</span>
   `;
   list.insertBefore(item, list.firstChild);
+
+  return dataUrl;
 }
 
 function drawZoneOverlay(ctx, w, h) {
@@ -2728,12 +2745,19 @@ function addDetectionItem(icon, name, sub, type) {
   while (list.children.length > 20) list.removeChild(list.lastChild);
 }
 
+function downloadViolationImage(filename, dataUrl) {
+  const a = document.createElement('a');
+  a.href = dataUrl;
+  a.download = filename;
+  a.click();
+}
+
 // ═══════════════════════════════════════
 // EVENT LOG
 // ═══════════════════════════════════════
 let activeFilter = 'all';
 
-function logEvent(type, isMobility) {
+function logEvent(type, isMobility, imageDataUrl) {
   const now = new Date();
   const crossTime = isMobility
     ? getSettingVal('r-default-time',20) + getSettingVal('r-mobility-ext',15)
@@ -2750,11 +2774,14 @@ function logEvent(type, isMobility) {
   const entry = {
     time: [now.getHours(),now.getMinutes(),now.getSeconds()].map(v=>String(v).padStart(2,'0')).join(':'),
     date: now.toLocaleDateString(),
+    timestamp: now.toISOString(),
     type: type === 'jaywalk' ? 'jaywalk' : isMobility ? 'mobility' : 'normal',
     persons: Math.floor(Math.random()*3)+1,
     crossTime: type === 'jaywalk' ? '—' : crossTime + 's',
     conf: (75 + Math.floor(Math.random()*20)) + '%',
-    notes: type === 'jaywalk' ? 'Crossed on red phase' : isMobility ? 'Extended time applied' : 'Normal crossing'
+    notes: type === 'jaywalk' ? 'Crossed on red phase' : isMobility ? 'Extended time applied' : 'Normal crossing',
+    imageDataUrl: imageDataUrl || null,
+    imageFilename: imageDataUrl ? `jaywalk-violation-${now.getTime()}.png` : null,
   };
   eventLog.unshift(entry);
   renderLog();
@@ -2764,7 +2791,7 @@ function renderLog() {
   const tbody = document.getElementById('log-tbody');
   const filtered = activeFilter === 'all' ? eventLog : eventLog.filter(e => e.type === activeFilter);
   if (!filtered.length) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:40px">No events yet</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:40px">No events yet</td></tr>';
     return;
   }
   const typeInfo = {
@@ -2775,6 +2802,16 @@ function renderLog() {
   };
   tbody.innerHTML = filtered.slice(0,200).map(e => {
     const [cls, label] = typeInfo[e.type] || ['pill-normal', e.type];
+    let imageCell = '<td style="color:var(--muted);font-size:0.7rem">—</td>';
+    if (e.type === 'jaywalk' && e.imageDataUrl) {
+      const fn = e.imageFilename || `jaywalk-violation-${Date.now()}.png`;
+      imageCell = `<td>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <img src="${e.imageDataUrl}" style="width:52px;height:36px;object-fit:cover;border-radius:4px;border:1px solid #ef4444;cursor:pointer;flex-shrink:0" title="Click to download" onclick="downloadViolationImage('${fn}','${e.imageDataUrl}')">
+          <a href="${e.imageDataUrl}" download="${fn}" style="color:#ef4444;font-size:0.68rem;font-family:var(--font-mono);text-decoration:none;white-space:nowrap;" title="Download violation photo">↓ Download</a>
+        </div>
+      </td>`;
+    }
     return `<tr>
       <td class="log-mono">${e.date} ${e.time}</td>
       <td><span class="log-type-pill ${cls}">${label}</span></td>
@@ -2782,6 +2819,7 @@ function renderLog() {
       <td class="log-mono">${e.crossTime}</td>
       <td class="log-mono">${e.conf}</td>
       <td style="color:var(--muted)">${e.notes}</td>
+      ${imageCell}
     </tr>`;
   }).join('');
 }
@@ -2794,8 +2832,8 @@ function filterLog(f, el) {
 }
 
 function exportLog() {
-  const headers = ['Date','Time','Type','Persons','CrossTime','Confidence','Notes'];
-  const rows = eventLog.map(e=>[e.date,e.time,e.type,e.persons,e.crossTime,e.conf,e.notes]);
+  const headers = ['Date','Time','Timestamp','Type','Persons','CrossTime','Confidence','Notes','ImageFilename'];
+  const rows = eventLog.map(e=>[e.date,e.time,e.timestamp||'',e.type,e.persons,e.crossTime,e.conf,e.notes,e.imageFilename||'']);
   const csv = [headers, ...rows].map(r=>r.join(',')).join('\n');
   const blob = new Blob([csv], {type:'text/csv'});
   const a = document.createElement('a');
