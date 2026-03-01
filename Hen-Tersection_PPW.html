@@ -1,0 +1,1761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Hen-Tersection | Western Crosswalk Presentation</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Rye&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Special+Elite&display=swap');
+
+  :root {
+    --dirt:   #C8A96E;
+    --dark:   #2B1810;
+    --mid:    #5C3317;
+    --red:    #8B1A1A;
+    --gold:   #D4A017;
+    --cream:  #F5EDD6;
+    --sky:    #7FB3D3;
+    --sage:   #6B8E6B;
+    --orange: #D4630A;
+    --green:  #2D7A2D;
+    --amber:  #E8A020;
+    --night:  #0D0A1A;
+  }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: #000;
+    font-family: 'Special Elite', serif;
+    cursor: none;
+  }
+
+  /* Custom cursor — sheriff star */
+  .cursor {
+    position: fixed; width: 24px; height: 24px;
+    font-size: 20px; line-height: 1;
+    pointer-events: none; z-index: 99999;
+    transform: translate(-50%, -50%);
+    transition: transform 0.1s;
+    text-shadow: 0 0 8px gold;
+  }
+
+  /* ── SLIDE CONTAINER ── */
+  #presentation {
+    position: relative;
+    width: 100vw; height: 100vh;
+    overflow: hidden;
+  }
+
+  .slide {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.0s;
+    overflow: hidden;
+  }
+  .slide.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+  .slide.entering { animation: slideEnter 0.7s cubic-bezier(.22,1,.36,1) forwards; }
+  .slide.exiting  { animation: slideExit  0.5s ease-in forwards; }
+
+  @keyframes slideEnter {
+    from { opacity: 0; transform: scale(1.04); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+  @keyframes slideExit {
+    from { opacity: 1; transform: scale(1); }
+    to   { opacity: 0; transform: scale(0.96); }
+  }
+
+  /* ── NAVIGATION ── */
+  #nav {
+    position: fixed; bottom: 28px; left: 50%;
+    transform: translateX(-50%);
+    display: flex; gap: 12px; align-items: center;
+    z-index: 1000;
+    background: rgba(43,24,16,0.85);
+    border: 2px solid var(--gold);
+    border-radius: 40px;
+    padding: 8px 22px;
+    backdrop-filter: blur(8px);
+  }
+  #nav button {
+    background: none; border: none;
+    color: var(--gold); font-size: 20px;
+    cursor: none; font-family: inherit;
+    padding: 2px 10px;
+    transition: color 0.2s, text-shadow 0.2s;
+  }
+  #nav button:hover { color: #fff; text-shadow: 0 0 12px var(--gold); }
+  #slide-counter {
+    color: var(--cream); font-size: 13px;
+    font-family: 'Special Elite', serif;
+    min-width: 60px; text-align: center;
+  }
+  .dot-nav { display: flex; gap: 8px; }
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--mid); cursor: none;
+    transition: background 0.3s, transform 0.3s;
+  }
+  .dot.active { background: var(--gold); transform: scale(1.4); }
+
+  /* ── DUST PARTICLES ── */
+  .dust-particle {
+    position: absolute;
+    width: 3px; height: 3px;
+    background: var(--dirt);
+    border-radius: 50%;
+    opacity: 0;
+    pointer-events: none;
+    animation: dustFloat var(--dur, 4s) var(--delay, 0s) infinite ease-in-out;
+  }
+  @keyframes dustFloat {
+    0%   { opacity: 0; transform: translate(0,0) scale(1); }
+    20%  { opacity: 0.6; }
+    80%  { opacity: 0.3; }
+    100% { opacity: 0; transform: translate(var(--tx,40px), var(--ty,-60px)) scale(0.3); }
+  }
+
+  /* ── STARS ── */
+  .star {
+    position: absolute;
+    background: white;
+    border-radius: 50%;
+    animation: twinkle var(--dur,2s) var(--delay,0s) infinite alternate ease-in-out;
+  }
+  @keyframes twinkle {
+    from { opacity: 0.3; transform: scale(0.8); }
+    to   { opacity: 1;   transform: scale(1.2); }
+  }
+
+  /* ══════════════════════════════════════════════
+     SLIDE 1 — WANTED POSTER
+  ══════════════════════════════════════════════ */
+  #slide-1 { background: radial-gradient(ellipse at 50% 30%, #3D1F0A 0%, #1A0A04 60%, #0D0500 100%); }
+
+  .wanted-poster {
+    position: absolute;
+    left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    width: min(540px, 85vw);
+    background: var(--cream);
+    border: 6px solid var(--gold);
+    outline: 3px solid var(--mid);
+    padding: 28px 32px 24px;
+    text-align: center;
+    box-shadow: 0 0 0 10px rgba(212,160,23,0.15), 0 30px 80px rgba(0,0,0,0.8), inset 0 0 60px rgba(180,140,80,0.12);
+    animation: posterReveal 1.2s cubic-bezier(.22,1,.36,1) forwards;
+    opacity: 0;
+  }
+  @keyframes posterReveal {
+    from { opacity: 0; transform: translate(-50%,-52%) rotate(-1deg) scale(0.92); }
+    to   { opacity: 1; transform: translate(-50%,-50%) rotate(0deg) scale(1); }
+  }
+  .poster-wanted {
+    font-family: 'Rye', serif;
+    font-size: clamp(48px, 9vw, 80px);
+    color: var(--red);
+    letter-spacing: 0.15em;
+    text-shadow: 3px 3px 0 rgba(0,0,0,0.3);
+    line-height: 1;
+    animation: wantedBounce 0.6s 1s cubic-bezier(.34,1.56,.64,1) both;
+  }
+  @keyframes wantedBounce {
+    from { transform: scale(0.7); opacity: 0; }
+    to   { transform: scale(1);   opacity: 1; }
+  }
+  .poster-divider {
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--mid), transparent);
+    margin: 10px 0;
+  }
+  .poster-badge {
+    font-size: clamp(60px, 12vw, 90px);
+    line-height: 1;
+    animation: badgeSpin 0.8s 1.4s cubic-bezier(.34,1.56,.64,1) both;
+  }
+  @keyframes badgeSpin {
+    from { transform: rotate(-180deg) scale(0); opacity: 0; }
+    to   { transform: rotate(0deg) scale(1); opacity: 1; }
+  }
+  .poster-title {
+    font-family: 'Rye', serif;
+    font-size: clamp(24px, 5vw, 42px);
+    color: var(--dark);
+    letter-spacing: 0.08em;
+    text-shadow: 2px 2px 0 rgba(0,0,0,0.2);
+    animation: fadeUp 0.6s 1.8s both;
+  }
+  .poster-subtitle {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: clamp(13px, 2vw, 17px);
+    color: var(--mid);
+    margin-top: 4px;
+    animation: fadeUp 0.6s 2.0s both;
+  }
+  .poster-reward {
+    background: var(--red);
+    color: var(--cream);
+    font-family: 'Rye', serif;
+    font-size: clamp(10px, 1.6vw, 14px);
+    letter-spacing: 0.12em;
+    padding: 8px 16px;
+    margin-top: 18px;
+    border: 2px solid var(--dark);
+    animation: fadeUp 0.6s 2.2s both;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Sunset glow at bottom */
+  #slide-1::after {
+    content: '';
+    position: absolute; bottom: 0; left: 0; right: 0; height: 30%;
+    background: linear-gradient(to top, rgba(212,99,10,0.35), transparent);
+    pointer-events: none;
+  }
+
+  /* ══════════════════════════════════════════════
+     SLIDE 2 — THE PROBLEM
+  ══════════════════════════════════════════════ */
+  #slide-2 { background: var(--dirt); }
+  #slide-2 .sky-bg {
+    position: absolute; top: 0; left: 0; right: 0; height: 45%;
+    background: linear-gradient(180deg, #5B9EC9 0%, #87CEEB 60%, var(--dirt) 100%);
+  }
+  .tumbleweed {
+    position: absolute;
+    font-size: 48px;
+    animation: tumble 8s linear infinite;
+    top: 55%;
+  }
+  @keyframes tumble {
+    from { left: -80px; transform: rotate(0deg); }
+    to   { left: 110%;  transform: rotate(720deg); }
+  }
+  .problem-card {
+    background: rgba(245,237,214,0.95);
+    border: 3px solid var(--red);
+    border-radius: 4px;
+    padding: 20px 24px;
+    box-shadow: 6px 6px 0 rgba(43,24,16,0.4);
+    animation: cardSlideIn 0.7s cubic-bezier(.22,1,.36,1) both;
+  }
+  @keyframes cardSlideIn {
+    from { opacity: 0; transform: translateX(-40px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  .stat-badge {
+    background: var(--dark);
+    border: 2px solid var(--gold);
+    color: var(--gold);
+    font-family: 'Rye', serif;
+    text-align: center;
+    padding: 16px;
+    box-shadow: 4px 4px 0 rgba(0,0,0,0.5);
+    animation: statPop 0.5s cubic-bezier(.34,1.56,.64,1) both;
+  }
+  @keyframes statPop {
+    from { transform: scale(0.5); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
+  }
+
+  /* ══════════════════════════════════════════════
+     SLIDE 3 — CROSSWALK SCENE (the star)
+  ══════════════════════════════════════════════ */
+  #slide-3 { background: linear-gradient(180deg, #1C4F6E 0%, #5B9EC9 35%, #87CEEB 55%, var(--dirt) 56%, #4A3010 100%); }
+
+  /* Buildings */
+  .building {
+    position: absolute;
+    bottom: 42%;
+    background: var(--mid);
+    animation: buildingRise 0.8s cubic-bezier(.22,1,.36,1) both;
+  }
+  @keyframes buildingRise {
+    from { transform: scaleY(0); transform-origin: bottom; }
+    to   { transform: scaleY(1); transform-origin: bottom; }
+  }
+
+  /* Road */
+  .road {
+    position: absolute;
+    left: 0; right: 0;
+    height: 22%;
+    top: 54%;
+    background: #1A1A1A;
+  }
+  .road-line {
+    position: absolute;
+    top: 50%; transform: translateY(-50%);
+    height: 6px;
+    background: repeating-linear-gradient(90deg, var(--amber) 0, var(--amber) 60px, transparent 60px, transparent 110px);
+    left: 0; right: 0;
+  }
+
+  /* Crosswalk */
+  .crosswalk {
+    position: absolute;
+    top: 54%; height: 22%;
+    left: 40%; width: 20%;
+    background: repeating-linear-gradient(90deg,
+      rgba(255,255,255,0.85) 0, rgba(255,255,255,0.85) 28px,
+      transparent 28px, transparent 44px);
+  }
+
+  /* Sidewalks */
+  .sidewalk-top {
+    position: absolute; left: 0; right: 0;
+    top: 48%; height: 6%;
+    background: linear-gradient(180deg, #B8905A, #A07840);
+  }
+  .sidewalk-bottom {
+    position: absolute; left: 0; right: 0;
+    top: 76%; height: 6%;
+    background: linear-gradient(180deg, #B8905A, #A07840);
+  }
+
+  /* Characters */
+  .char {
+    position: absolute;
+    font-size: clamp(28px, 4vw, 46px);
+    line-height: 1;
+    filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.5));
+    z-index: 10;
+  }
+
+  /* Hens crossing — waddle animation */
+  .ped-crossing {
+    animation: henWaddle 0.5s ease-in-out infinite alternate;
+  }
+  @keyframes henWaddle {
+    0%   { transform: translateY(0) rotate(-5deg); }
+    100% { transform: translateY(-5px) rotate(5deg); }
+  }
+
+  /* Hen pecking while waiting */
+  .hen-wait {
+    animation: henPeck 1.2s ease-in-out infinite;
+  }
+  @keyframes henPeck {
+    0%, 100% { transform: rotate(0deg) translateY(0); }
+    40%  { transform: rotate(15deg) translateY(3px); }
+    60%  { transform: rotate(-5deg) translateY(-2px); }
+  }
+
+  /* Detection box flashing */
+  .detect-box {
+    position: absolute;
+    border: 3px solid var(--red);
+    animation: detectFlash 0.8s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 20;
+  }
+  @keyframes detectFlash {
+    0%, 100% { border-color: var(--red);   box-shadow: 0 0 12px rgba(139,26,26,0.8); }
+    50%       { border-color: var(--amber); box-shadow: 0 0 20px rgba(232,160,32,0.9); }
+  }
+  .detect-label {
+    position: absolute;
+    top: -28px; left: 50%; transform: translateX(-50%);
+    background: var(--red);
+    color: white;
+    font-family: 'Special Elite', serif;
+    font-size: 11px;
+    padding: 2px 8px;
+    white-space: nowrap;
+    animation: detectFlash 0.8s ease-in-out infinite;
+  }
+
+  /* Traffic light */
+  .traffic-light {
+    position: absolute;
+    display: flex; flex-direction: column;
+    align-items: center;
+    z-index: 15;
+  }
+  .tl-housing {
+    background: #111;
+    border: 2px solid #444;
+    border-radius: 6px;
+    padding: 5px 6px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .tl-bulb {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    border: 1px solid #333;
+  }
+  .tl-pole {
+    width: 4px; height: 60px;
+    background: #555;
+  }
+  .bulb-red    { background: var(--red);    box-shadow: 0 0 12px rgba(139,26,26,0.9); }
+  .bulb-yellow { background: #333; }
+  .bulb-green  { background: #333; }
+  .tl-housing.crossing .bulb-red    { background: #333; box-shadow: none; }
+  .tl-housing.crossing .bulb-green  { background: var(--green); box-shadow: 0 0 12px rgba(45,122,45,0.9); }
+
+  /* WALK signal */
+  .walk-signal {
+    position: absolute;
+    background: #111; border: 2px solid #333;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: clamp(18px, 3vw, 28px);
+    animation: walkBlink 1s step-start infinite;
+    z-index: 15;
+  }
+  @keyframes walkBlink {
+    0%, 49% { opacity: 1; }
+    50%, 100% { opacity: 0.3; }
+  }
+
+  /* Cars are JS-animated, just need positioning */
+  .car-sprite {
+    position: absolute;
+    z-index: 10;
+  }
+
+  /* Hen SVG sizing */
+  .hen-svg {
+    position: absolute;
+    z-index: 11;
+    filter: drop-shadow(2px 4px 4px rgba(0,0,0,0.5));
+  }
+
+  /* Hen crossing walk */
+  @keyframes henWalkDown {
+    0%   { transform: translateY(0) scaleX(1); }
+    25%  { transform: translateY(2px) scaleX(1) rotate(-5deg); }
+    50%  { transform: translateY(0) scaleX(1); }
+    75%  { transform: translateY(2px) scaleX(1) rotate(5deg); }
+    100% { transform: translateY(0) scaleX(1); }
+  }
+  .hen-walking { animation: henWalkDown 0.45s ease-in-out infinite; }
+
+  @keyframes henPeckAnim {
+    0%, 60%, 100% { transform: rotate(0deg); }
+    80%  { transform: rotate(18deg); }
+  }
+  .hen-pecking { animation: henPeckAnim 1.4s ease-in-out infinite; }
+
+  @keyframes henRunAnim {
+    0%   { transform: rotate(-8deg) translateY(0); }
+    50%  { transform: rotate(8deg) translateY(-4px); }
+    100% { transform: rotate(-8deg) translateY(0); }
+  }
+  .hen-running { animation: henRunAnim 0.25s ease-in-out infinite; }
+
+  /* Status panel */
+  .status-panel {
+    position: absolute;
+    right: 2%; top: 8%;
+    background: rgba(43,24,16,0.92);
+    border: 2px solid var(--gold);
+    border-radius: 6px;
+    padding: 14px 16px;
+    color: var(--cream);
+    font-family: 'Special Elite', serif;
+    font-size: clamp(10px, 1.4vw, 14px);
+    min-width: 200px;
+    backdrop-filter: blur(6px);
+    animation: panelSlide 0.8s 0.5s cubic-bezier(.22,1,.36,1) both;
+    z-index: 30;
+  }
+  @keyframes panelSlide {
+    from { opacity: 0; transform: translateX(30px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  .status-dot {
+    display: inline-block;
+    width: 10px; height: 10px; border-radius: 50%;
+    margin-right: 8px; vertical-align: middle;
+    animation: dotPulse 1.5s ease-in-out infinite;
+  }
+  @keyframes dotPulse {
+    0%, 100% { transform: scale(1); }
+    50%       { transform: scale(1.4); }
+  }
+  .dot-green  { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .dot-red    { background: var(--red);   box-shadow: 0 0 6px var(--red); }
+  .dot-amber  { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+  .dot-blue   { background: var(--sky);   box-shadow: 0 0 6px var(--sky); }
+  .dot-gold   { background: var(--gold);  box-shadow: 0 0 6px var(--gold); }
+
+  /* Voice bubble */
+  .voice-bubble {
+    position: absolute;
+    bottom: 8%;
+    left: 2%;
+    background: rgba(43,24,16,0.92);
+    border: 2px solid var(--gold);
+    border-radius: 8px;
+    padding: 10px 16px;
+    color: var(--cream);
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: clamp(11px, 1.5vw, 15px);
+    max-width: 55%;
+    animation: voicePop 0.6s 1s cubic-bezier(.34,1.56,.64,1) both;
+    z-index: 30;
+  }
+  @keyframes voicePop {
+    from { transform: scale(0.8); opacity: 0; }
+    to   { transform: scale(1);   opacity: 1; }
+  }
+  .voice-bubble::after {
+    content: '';
+    position: absolute; bottom: -12px; left: 24px;
+    border: 6px solid transparent;
+    border-top-color: var(--gold);
+  }
+
+  /* Progress bar */
+  .crossing-bar {
+    position: absolute; bottom: 4%; left: 2%;
+    width: 40%;
+  }
+  .crossing-bar-track {
+    height: 8px; background: #333; border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid var(--gold);
+  }
+  .crossing-bar-fill {
+    height: 100%; width: 65%;
+    background: linear-gradient(90deg, var(--green), var(--amber));
+    border-radius: 4px;
+    animation: barPulse 2s ease-in-out infinite alternate;
+  }
+  @keyframes barPulse {
+    from { width: 60%; }
+    to   { width: 72%; }
+  }
+
+  /* Saloon sign */
+  .saloon-sign {
+    position: absolute;
+    background: var(--red);
+    border: 2px solid var(--gold);
+    color: var(--gold);
+    font-family: 'Rye', serif;
+    font-size: clamp(8px, 1.2vw, 13px);
+    letter-spacing: 0.1em;
+    padding: 3px 8px;
+    animation: signSwing 3s ease-in-out infinite alternate;
+    transform-origin: top center;
+  }
+  @keyframes signSwing {
+    from { transform: rotate(-2deg); }
+    to   { transform: rotate(2deg); }
+  }
+
+  /* ══════════════════════════════════════════════
+     SLIDE 4 — FEATURES
+  ══════════════════════════════════════════════ */
+  #slide-4 { background: radial-gradient(ellipse at 30% 20%, #3D1F0A, #1A0A04 70%); }
+
+  .feature-card {
+    background: rgba(26,15,10,0.9);
+    border: 2px solid var(--gold);
+    border-radius: 6px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.3s, box-shadow 0.3s;
+    animation: cardReveal 0.6s cubic-bezier(.22,1,.36,1) both;
+  }
+  .feature-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: var(--gold);
+  }
+  .feature-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 16px 40px rgba(0,0,0,0.6), 0 0 20px rgba(212,160,23,0.2);
+  }
+  @keyframes cardReveal {
+    from { opacity: 0; transform: translateY(30px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ══════════════════════════════════════════════
+     SLIDE 5 — SNOWFLAKE
+  ══════════════════════════════════════════════ */
+  #slide-5 { background: linear-gradient(135deg, #F5EDD6 0%, #E8D5A8 100%); }
+  .snowflake-float {
+    position: absolute;
+    font-size: 24px;
+    opacity: 0.15;
+    animation: snowDrift var(--dur,6s) var(--delay,0s) linear infinite;
+    pointer-events: none;
+  }
+  @keyframes snowDrift {
+    from { transform: translateY(-40px) rotate(0deg); opacity: 0; }
+    20%  { opacity: 0.2; }
+    80%  { opacity: 0.1; }
+    to   { transform: translateY(110vh) rotate(360deg); opacity: 0; }
+  }
+
+  /* ══════════════════════════════════════════════
+     SLIDE 6 — CALL TO ACTION (sunset)
+  ══════════════════════════════════════════════ */
+  #slide-6 { background: linear-gradient(180deg, #0D0500 0%, #3D1F0A 20%, #8B3A0A 50%, #D4630A 70%, #D4A017 85%, #F5C842 100%); }
+  .sunset-rays {
+    position: absolute;
+    top: 35%; left: 50%; transform: translateX(-50%);
+    width: 300px; height: 300px;
+    animation: raysRotate 20s linear infinite;
+    opacity: 0.15;
+  }
+  @keyframes raysRotate {
+    from { transform: translateX(-50%) rotate(0deg); }
+    to   { transform: translateX(-50%) rotate(360deg); }
+  }
+  .hero-rider {
+    position: absolute;
+    bottom: 22%; left: 50%;
+    font-size: clamp(50px, 8vw, 90px);
+    transform: translateX(-50%);
+    animation: riderBounce 1s ease-in-out infinite alternate;
+    filter: drop-shadow(0 8px 20px rgba(0,0,0,0.6));
+  }
+  @keyframes riderBounce {
+    from { transform: translateX(-50%) translateY(0); }
+    to   { transform: translateX(-50%) translateY(-10px); }
+  }
+
+  /* ── SHARED UTILITY STYLES ── */
+  .slide-title {
+    font-family: 'Rye', serif;
+    font-size: clamp(28px, 5vw, 52px);
+    color: var(--gold);
+    text-align: center;
+    letter-spacing: 0.06em;
+    text-shadow: 2px 2px 0 rgba(0,0,0,0.4), 0 0 30px rgba(212,160,23,0.3);
+  }
+  .parchment-panel {
+    background: rgba(245,237,214,0.96);
+    border: 3px solid var(--mid);
+    box-shadow: 6px 6px 0 rgba(43,24,16,0.35), inset 0 0 30px rgba(180,140,80,0.1);
+  }
+  .dark-panel {
+    background: rgba(43,24,16,0.92);
+    border: 2px solid var(--gold);
+    box-shadow: 4px 4px 0 rgba(0,0,0,0.5);
+  }
+
+  /* Terrain / cactus bottom */
+  .terrain {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 22%;
+    background: linear-gradient(180deg, #4A2810 0%, #2B1810 100%);
+  }
+
+  /* ── PROGRESS BAR (slide) ── */
+  #progress-bar {
+    position: fixed; top: 0; left: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--gold), var(--orange));
+    transition: width 0.5s ease;
+    z-index: 9999;
+    box-shadow: 0 0 8px rgba(212,160,23,0.6);
+  }
+
+  /* ── HOTKEY HINT ── */
+  #hotkey-hint {
+    position: fixed; top: 16px; right: 16px;
+    color: rgba(212,160,23,0.5);
+    font-size: 11px; font-family: 'Special Elite', serif;
+    letter-spacing: 0.05em;
+    z-index: 9999;
+  }
+</style>
+</head>
+<body>
+
+<div class="cursor" id="cursor">⭐</div>
+<div id="progress-bar"></div>
+<div id="hotkey-hint">← → arrow keys or click nav</div>
+
+<div id="presentation">
+
+  <!-- ══════════════════════════════════════════
+       SLIDE 1 — WANTED POSTER
+  ══════════════════════════════════════════ -->
+  <div class="slide active" id="slide-1">
+    <!-- Stars -->
+    <div class="star" style="width:3px;height:3px;top:8%;left:12%;--dur:2.1s;--delay:0s"></div>
+    <div class="star" style="width:2px;height:2px;top:15%;left:28%;--dur:1.8s;--delay:0.5s"></div>
+    <div class="star" style="width:4px;height:4px;top:6%;left:55%;--dur:2.4s;--delay:1s"></div>
+    <div class="star" style="width:2px;height:2px;top:20%;left:72%;--dur:1.6s;--delay:0.3s"></div>
+    <div class="star" style="width:3px;height:3px;top:10%;left:88%;--dur:2.8s;--delay:0.8s"></div>
+    <div class="star" style="width:2px;height:2px;top:25%;left:4%;--dur:2.0s;--delay:1.2s"></div>
+    <div class="star" style="width:3px;height:3px;top:5%;left:40%;--dur:1.9s;--delay:0.2s"></div>
+    <div class="star" style="width:2px;height:2px;top:18%;left:93%;--dur:2.3s;--delay:0.7s"></div>
+
+    <!-- Moon -->
+    <div style="position:absolute;top:8%;right:8%;font-size:clamp(36px,5vw,60px)">🌕</div>
+
+    <!-- Cacti -->
+    <div style="position:absolute;bottom:0;left:3%;font-size:clamp(60px,10vw,130px);filter:drop-shadow(0 0 20px rgba(0,0,0,0.5))">🌵</div>
+    <div style="position:absolute;bottom:0;left:8%;font-size:clamp(40px,6vw,80px)">🌵</div>
+    <div style="position:absolute;bottom:0;right:4%;font-size:clamp(60px,9vw,120px);filter:drop-shadow(0 0 20px rgba(0,0,0,0.5))">🌵</div>
+    <div style="position:absolute;bottom:0;right:11%;font-size:clamp(30px,5vw,70px)">🌵</div>
+
+    <!-- Ground line -->
+    <div style="position:absolute;bottom:0;left:0;right:0;height:18%;background:linear-gradient(180deg,#3D1F0A,#1A0A04)"></div>
+
+    <!-- Wanted Poster -->
+    <div class="wanted-poster">
+      <div class="poster-wanted">WANTED</div>
+      <div class="poster-divider"></div>
+      <div class="poster-badge">🐔</div>
+      <div class="poster-divider" style="margin-top:10px"></div>
+      <div style="font-family:'Special Elite',serif;font-size:clamp(10px,1.5vw,14px);color:var(--mid);letter-spacing:0.1em;margin:6px 0">CROSSWALK SYSTEM</div>
+      <div class="poster-title">HEN-TERSECTION</div>
+      <div class="poster-subtitle">Smart AI-Powered Pedestrian Crossing</div>
+      <div style="display:flex;gap:24px;justify-content:center;margin:14px 0;font-family:'Special Elite',serif;font-size:clamp(10px,1.4vw,13px);color:var(--mid)">
+        <span>📷 AI Detection</span>
+        <span>🦽 Accessible</span>
+        <span>❄️ Snowflake</span>
+      </div>
+      <div class="poster-reward">⭐ REWARD: SAFER STREETS ⭐ HENHACKS 2026 ⭐</div>
+    </div>
+
+    <!-- Dust particles -->
+    <div class="dust-particle" style="left:10%;bottom:20%;--dur:5s;--delay:0s;--tx:60px;--ty:-80px"></div>
+    <div class="dust-particle" style="left:20%;bottom:15%;--dur:4s;--delay:1s;--tx:40px;--ty:-60px"></div>
+    <div class="dust-particle" style="left:75%;bottom:25%;--dur:6s;--delay:2s;--tx:-50px;--ty:-70px"></div>
+    <div class="dust-particle" style="left:85%;bottom:18%;--dur:4.5s;--delay:0.5s;--tx:-40px;--ty:-55px"></div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       SLIDE 2 — THE PROBLEM
+  ══════════════════════════════════════════ -->
+  <div class="slide" id="slide-2">
+    <div class="sky-bg"></div>
+
+    <!-- Silhouette buildings -->
+    <div style="position:absolute;bottom:42%;left:0;right:0;height:200px;overflow:hidden">
+      <div class="building" style="left:2%;width:9%;height:120px;background:var(--mid);animation-delay:0.1s"></div>
+      <div class="building" style="left:12%;width:7%;height:90px;background:#3A1E0A;animation-delay:0.2s"></div>
+      <div class="building" style="left:20%;width:11%;height:140px;background:var(--mid);animation-delay:0.15s"></div>
+      <div class="building" style="left:60%;width:8%;height:110px;background:#3A1E0A;animation-delay:0.25s"></div>
+      <div class="building" style="left:70%;width:10%;height:95px;background:var(--mid);animation-delay:0.3s"></div>
+      <div class="building" style="left:82%;width:8%;height:130px;background:#3A1E0A;animation-delay:0.1s"></div>
+      <div class="building" style="left:91%;width:9%;height:80px;background:var(--mid);animation-delay:0.2s"></div>
+    </div>
+
+    <div class="tumbleweed">🌾</div>
+
+    <!-- Terrain bottom -->
+    <div class="terrain"></div>
+
+    <!-- Content grid -->
+    <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:clamp(16px,3vw,40px)">
+      <div style="width:100%;max-width:1100px">
+        <div class="slide-title" style="margin-bottom:clamp(12px,2vw,24px);animation:fadeUp 0.6s 0.2s both">
+          ☠️  THE PROBLEM  ☠️
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:clamp(12px,2vw,24px)">
+          <!-- Left: problem list -->
+          <div class="parchment-panel" style="padding:clamp(14px,2vw,24px);border-radius:4px;animation:cardSlideIn 0.7s 0.3s both">
+            <div style="font-family:'Rye',serif;font-size:clamp(14px,2vw,20px);color:var(--red);margin-bottom:12px;letter-spacing:0.05em">
+              TODAY'S CROSSWALK FAILS
+            </div>
+            <div style="border-top:2px solid var(--red);margin-bottom:14px"></div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;align-items:flex-start;gap:10px;font-family:'Special Elite',serif;font-size:clamp(11px,1.5vw,15px);color:var(--dark);animation:fadeUp 0.5s 0.5s both">
+                <span style="font-size:22px">⚠️</span>Fixed crossing times ignore pedestrian count & speed
+              </div>
+              <div style="display:flex;align-items:flex-start;gap:10px;font-family:'Special Elite',serif;font-size:clamp(11px,1.5vw,15px);color:var(--dark);animation:fadeUp 0.5s 0.65s both">
+                <span style="font-size:22px">🦽</span>No adjustment for wheelchairs or mobility aid users
+              </div>
+              <div style="display:flex;align-items:flex-start;gap:10px;font-family:'Special Elite',serif;font-size:clamp(11px,1.5vw,15px);color:var(--dark);animation:fadeUp 0.5s 0.8s both">
+                <span style="font-size:22px">🏃</span>Jaywalkers cross on red — no detection or deterrent
+              </div>
+              <div style="display:flex;align-items:flex-start;gap:10px;font-family:'Special Elite',serif;font-size:clamp(11px,1.5vw,15px);color:var(--dark);animation:fadeUp 0.5s 0.95s both">
+                <span style="font-size:22px">📋</span>Zero data logging — incidents go unrecorded
+              </div>
+            </div>
+          </div>
+          <!-- Right: stats -->
+          <div style="display:flex;flex-direction:column;gap:clamp(10px,1.5vw,16px)">
+            <div class="stat-badge" style="animation-delay:0.4s">
+              <div style="font-size:clamp(32px,5vw,56px);color:var(--gold)">3×</div>
+              <div style="font-size:clamp(10px,1.4vw,13px);color:var(--cream);margin-top:4px">Higher accident risk at<br>unmanaged crosswalks</div>
+            </div>
+            <div class="stat-badge" style="animation-delay:0.6s">
+              <div style="font-size:clamp(32px,5vw,56px);color:var(--amber)">40%</div>
+              <div style="font-size:clamp(10px,1.4vw,13px);color:var(--cream);margin-top:4px">Of pedestrian incidents<br>involve jaywalking</div>
+            </div>
+            <div class="stat-badge" style="animation-delay:0.8s">
+              <div style="font-size:clamp(32px,5vw,56px);color:var(--red)">0s</div>
+              <div style="font-size:clamp(10px,1.4vw,13px);color:var(--cream);margin-top:4px">Extra crossing time given<br>to wheelchair users today</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       SLIDE 3 — CROSSWALK SCENE ★★★
+  ══════════════════════════════════════════ -->
+  <div class="slide" id="slide-3">
+    <!-- Sky -->
+    <div style="position:absolute;inset:0;background:linear-gradient(180deg,#1C4F6E 0%,#5B9EC9 38%,#87CEEB 54%)"></div>
+
+    <!-- Sun -->
+    <div style="position:absolute;top:6%;left:50%;transform:translateX(-50%);font-size:clamp(40px,6vw,70px);animation:riderBounce 3s ease-in-out infinite alternate;filter:drop-shadow(0 0 30px rgba(212,160,23,0.7))">☀️</div>
+
+    <!-- Building silhouettes — full western town -->
+    <div style="position:absolute;bottom:44%;left:0;right:0;height:220px;overflow:hidden">
+      <!-- LEFT SIDE BUILDINGS -->
+      <!-- Building 1: Saloon (wide, tall) -->
+      <div style="position:absolute;bottom:0;left:0%;width:13%;height:140px;background:#3D1F0A;border-top:4px solid #5C3317"></div>
+      <!-- Saloon false-front parapet -->
+      <div style="position:absolute;bottom:140px;left:0%;width:13%;height:22px;background:#3D1F0A;border-top:3px solid #5C3317"></div>
+      <div class="saloon-sign" style="bottom:112px;left:2%">SALOON</div>
+      <!-- Saloon windows row 1 -->
+      <div style="position:absolute;bottom:95px;left:1.5%;width:16px;height:20px;background:rgba(212,160,23,0.55);border:2px solid #5C3317"></div>
+      <div style="position:absolute;bottom:95px;left:4.5%;width:16px;height:20px;background:rgba(212,160,23,0.55);border:2px solid #5C3317"></div>
+      <div style="position:absolute;bottom:95px;left:7.5%;width:16px;height:20px;background:rgba(212,160,23,0.45);border:2px solid #5C3317"></div>
+      <div style="position:absolute;bottom:95px;left:10.5%;width:16px;height:20px;background:rgba(212,160,23,0.55);border:2px solid #5C3317"></div>
+      <!-- Saloon windows row 2 -->
+      <div style="position:absolute;bottom:60px;left:1.5%;width:16px;height:20px;background:rgba(212,160,23,0.4);border:2px solid #5C3317"></div>
+      <div style="position:absolute;bottom:60px;left:4.5%;width:30px;height:20px;background:rgba(212,160,23,0.3);border:2px solid #5C3317"></div>
+      <div style="position:absolute;bottom:60px;left:10.5%;width:16px;height:20px;background:rgba(212,160,23,0.4);border:2px solid #5C3317"></div>
+      <!-- Saloon door -->
+      <div style="position:absolute;bottom:0;left:5.5%;width:20px;height:38px;background:#2B1810;border:2px solid #5C3317;border-bottom:none"></div>
+
+      <!-- Building 2: Sheriff (narrow, shorter) -->
+      <div style="position:absolute;bottom:0;left:14%;width:8%;height:100px;background:#2B1810;border-top:4px solid #3D1F0A"></div>
+      <div style="position:absolute;bottom:100px;left:14%;width:8%;height:16px;background:#2B1810"></div>
+      <!-- Sheriff windows -->
+      <div style="position:absolute;bottom:65px;left:14.5%;width:14px;height:18px;background:rgba(139,179,200,0.5);border:2px solid #5C3317"></div>
+      <div style="position:absolute;bottom:65px;left:18%;width:14px;height:18px;background:rgba(139,179,200,0.5);border:2px solid #5C3317"></div>
+      <div style="position:absolute;bottom:35px;left:16%;width:12px;height:16px;background:rgba(139,179,200,0.4);border:2px solid #5C3317"></div>
+      <!-- Sheriff sign ON the building face -->
+      <div style="position:absolute;bottom:82px;left:14%;width:8%;text-align:center;font-size:9px;color:#D4A017;font-family:'Special Elite',serif;white-space:nowrap;background:rgba(43,24,16,0.7);padding:1px 2px">⭐ SHERIFF</div>
+
+      <!-- Building 3: General Store (wide) -->
+      <div style="position:absolute;bottom:0;left:22%;width:14%;height:120px;background:#3D1F0A;border-top:4px solid #5C3317"></div>
+      <div style="position:absolute;bottom:120px;left:22%;width:14%;height:20px;background:#3D1F0A"></div>
+      <!-- Arch roof trim -->
+      <div style="position:absolute;bottom:120px;left:22%;width:14%;height:6px;background:#5C3317"></div>
+      <!-- General Store windows row 1 -->
+      <div style="position:absolute;bottom:80px;left:23%;width:15px;height:18px;background:rgba(212,160,23,0.5);border:2px solid #5C3317"></div>
+      <div style="position:absolute;bottom:80px;left:26%;width:15px;height:18px;background:rgba(212,160,23,0.55);border:2px solid #5C3317"></div>
+      <div style="position:absolute;bottom:80px;left:29%;width:15px;height:18px;background:rgba(212,160,23,0.45);border:2px solid #5C3317"></div>
+      <div style="position:absolute;bottom:80px;left:32%;width:15px;height:18px;background:rgba(212,160,23,0.5);border:2px solid #5C3317"></div>
+      <!-- General Store windows row 2 -->
+      <div style="position:absolute;bottom:48px;left:23%;width:15px;height:18px;background:rgba(212,160,23,0.4);border:2px solid #5C3317"></div>
+      <div style="position:absolute;bottom:48px;left:29%;width:15px;height:18px;background:rgba(212,160,23,0.4);border:2px solid #5C3317"></div>
+      <!-- Store door -->
+      <div style="position:absolute;bottom:0;left:26.5%;width:18px;height:36px;background:#2B1810;border:2px solid #5C3317;border-bottom:none"></div>
+      <!-- Store sign ON the building face -->
+      <div style="position:absolute;bottom:100px;left:22%;width:14%;text-align:center;font-size:9px;color:#D4A017;font-family:'Special Elite',serif;white-space:nowrap;background:rgba(61,31,10,0.85);padding:2px 4px;border:1px solid #5C3317">GEN. STORE</div>
+
+      <!-- RIGHT SIDE BUILDINGS -->
+      <!-- Building 4: Bank (wide, grand) -->
+      <div style="position:absolute;bottom:0;left:60%;width:14%;height:145px;background:#2B1810;border-top:5px solid #5C3317"></div>
+      <!-- Bank parapet -->
+      <div style="position:absolute;bottom:145px;left:60%;width:14%;height:20px;background:#3D1F0A;border-top:3px solid var(--gold)"></div>
+      <!-- Bank columns hinted -->
+      <div style="position:absolute;bottom:0;left:60.5%;width:3px;height:90px;background:#5C3317"></div>
+      <div style="position:absolute;bottom:0;left:63%;width:3px;height:90px;background:#5C3317"></div>
+      <div style="position:absolute;bottom:0;left:65.5%;width:3px;height:90px;background:#5C3317"></div>
+      <div style="position:absolute;bottom:0;left:68%;width:3px;height:90px;background:#5C3317"></div>
+      <div style="position:absolute;bottom:0;left:70.5%;width:3px;height:90px;background:#5C3317"></div>
+      <!-- Bank windows -->
+      <div style="position:absolute;bottom:105px;left:61%;width:15px;height:20px;background:rgba(139,179,200,0.55);border:2px solid var(--gold)"></div>
+      <div style="position:absolute;bottom:105px;left:64.5%;width:15px;height:20px;background:rgba(139,179,200,0.55);border:2px solid var(--gold)"></div>
+      <div style="position:absolute;bottom:105px;left:68%;width:15px;height:20px;background:rgba(139,179,200,0.55);border:2px solid var(--gold)"></div>
+      <div style="position:absolute;bottom:70px;left:61%;width:15px;height:20px;background:rgba(139,179,200,0.45);border:2px solid var(--gold)"></div>
+      <div style="position:absolute;bottom:70px;left:68%;width:15px;height:20px;background:rgba(139,179,200,0.45);border:2px solid var(--gold)"></div>
+      <!-- Bank vault door hint -->
+      <div style="position:absolute;bottom:0;left:64%;width:22px;height:40px;background:#1A0A04;border:3px solid var(--gold);border-bottom:none;border-radius:2px 2px 0 0"></div>
+      <!-- Bank sign ON the building face -->
+      <div style="position:absolute;bottom:125px;left:60%;width:14%;text-align:center;font-size:9px;color:var(--gold);font-family:'Special Elite',serif;white-space:nowrap;background:rgba(43,24,16,0.85);padding:2px 4px;border:1px solid var(--gold)">FIRST BANK</div>
+
+      <!-- Building 5: Blacksmith (medium) -->
+      <div style="position:absolute;bottom:0;left:75%;width:9%;height:105px;background:#3D1F0A;border-top:4px solid #5C3317"></div>
+      <!-- Chimney -->
+      <div style="position:absolute;bottom:105px;left:75.5%;width:8px;height:28px;background:#2B1810;border:1px solid #5C3317"></div>
+      <!-- Smoke from chimney -->
+      <div style="position:absolute;bottom:133px;left:75%;font-size:14px;opacity:0.5;animation:snowDrift 3s linear infinite">💨</div>
+      <!-- Blacksmith windows -->
+      <div style="position:absolute;bottom:70px;left:76%;width:14px;height:18px;background:rgba(232,160,32,0.6);border:2px solid #5C3317"></div>
+      <div style="position:absolute;bottom:70px;left:79.5%;width:14px;height:18px;background:rgba(232,160,32,0.6);border:2px solid #5C3317"></div>
+      <div style="position:absolute;bottom:40px;left:77.5%;width:14px;height:14px;background:rgba(232,160,32,0.4);border:2px solid #5C3317"></div>
+      <!-- Blacksmith door -->
+      <div style="position:absolute;bottom:0;left:77%;width:18px;height:34px;background:#1A0A04;border:2px solid #5C3317;border-bottom:none"></div>
+      <!-- Smith sign ON the building face -->
+      <div style="position:absolute;bottom:83px;left:75%;width:9%;text-align:center;font-size:9px;color:#D4A017;font-family:'Special Elite',serif;white-space:nowrap;background:rgba(43,24,16,0.8);padding:1px 2px">⚒ SMITH</div>
+
+      <!-- Building 6: Hotel (tall) -->
+      <div style="position:absolute;bottom:0;left:85%;width:10%;height:155px;background:#2B1810;border-top:4px solid #5C3317"></div>
+      <!-- Hotel parapet + balcony rail hint -->
+      <div style="position:absolute;bottom:155px;left:85%;width:10%;height:18px;background:#3D1F0A;border-top:3px solid #5C3317"></div>
+      <!-- Hotel balcony rail -->
+      <div style="position:absolute;bottom:120px;left:85%;width:10%;height:3px;background:#5C3317"></div>
+      <div style="position:absolute;bottom:103px;left:85.5%;width:1px;height:17px;background:#5C3317"></div>
+      <div style="position:absolute;bottom:103px;left:87%;width:1px;height:17px;background:#5C3317"></div>
+      <div style="position:absolute;bottom:103px;left:88.5%;width:1px;height:17px;background:#5C3317"></div>
+      <div style="position:absolute;bottom:103px;left:90%;width:1px;height:17px;background:#5C3317"></div>
+      <div style="position:absolute;bottom:103px;left:91.5%;width:1px;height:17px;background:#5C3317"></div>
+      <div style="position:absolute;bottom:103px;left:93.5%;width:1px;height:17px;background:#5C3317"></div>
+      <!-- Hotel windows top floor -->
+      <div style="position:absolute;bottom:125px;left:86%;width:14px;height:16px;background:rgba(212,160,23,0.5);border:2px solid #5C3317"></div>
+      <div style="position:absolute;bottom:125px;left:89%;width:14px;height:16px;background:rgba(212,160,23,0.6);border:2px solid #5C3317"></div>
+      <div style="position:absolute;bottom:125px;left:92%;width:14px;height:16px;background:rgba(212,160,23,0.5);border:2px solid #5C3317"></div>
+      <!-- Hotel windows mid floor -->
+      <div style="position:absolute;bottom:85px;left:86%;width:14px;height:16px;background:rgba(212,160,23,0.45);border:2px solid #5C3317"></div>
+      <div style="position:absolute;bottom:85px;left:89%;width:14px;height:16px;background:rgba(212,160,23,0.3);border:2px solid #5C3317"></div>
+      <div style="position:absolute;bottom:85px;left:92%;width:14px;height:16px;background:rgba(212,160,23,0.45);border:2px solid #5C3317"></div>
+      <!-- Hotel windows ground floor -->
+      <div style="position:absolute;bottom:48px;left:86%;width:14px;height:16px;background:rgba(212,160,23,0.4);border:2px solid #5C3317"></div>
+      <div style="position:absolute;bottom:48px;left:92%;width:14px;height:16px;background:rgba(212,160,23,0.4);border:2px solid #5C3317"></div>
+      <!-- Hotel door -->
+      <div style="position:absolute;bottom:0;left:88.5%;width:16px;height:38px;background:#1A0A04;border:2px solid #5C3317;border-bottom:none;border-radius:2px 2px 0 0"></div>
+      <!-- Hotel sign ON the building face -->
+      <div style="position:absolute;bottom:132px;left:85%;width:10%;text-align:center;font-size:9px;color:#D4A017;font-family:'Special Elite',serif;white-space:nowrap;background:rgba(43,24,16,0.85);padding:2px 3px;border:1px solid #5C3317">GRAND HOTEL</div>
+
+      <!-- Boardwalk plank shadows across all buildings -->
+      <div style="position:absolute;bottom:0;left:0;right:0;height:6px;background:#1A0A04;opacity:0.7"></div>
+    </div>
+
+    <!-- Top sidewalk -->
+    <div class="sidewalk-top"></div>
+
+    <!-- Road -->
+    <div class="road"></div>
+    <!-- Road center line -->
+    <div class="road-line"></div>
+
+    <!-- Crosswalk stripes -->
+    <div class="crosswalk"></div>
+
+    <!-- Bottom sidewalk -->
+    <div class="sidewalk-bottom"></div>
+
+    <!-- Ground -->
+    <div class="terrain"></div>
+
+    <!-- TRAFFIC LIGHT LEFT (car light) — pole reaches from top:28% down to sidewalk -->
+    <div class="traffic-light" style="left:30%;top:28%">
+      <div class="tl-housing" id="tl-main">
+        <div class="tl-bulb" id="bulb-red-el"   style="background:var(--red);box-shadow:0 0 12px rgba(139,26,26,0.9)"></div>
+        <div class="tl-bulb" id="bulb-yellow-el" style="background:#333"></div>
+        <div class="tl-bulb" id="bulb-green-el"  style="background:#333"></div>
+      </div>
+      <div class="tl-pole"></div>
+    </div>
+
+    <!-- PEDESTRIAN SIGNAL — ground-mounted on right side of crosswalk, pole goes up from sidewalk -->
+    <div style="position:absolute;right:28%;bottom:22%;z-index:15;display:flex;flex-direction:column;align-items:center">
+      <!-- Signal box -->
+      <div id="ped-signal" style="background:#1B5E20;border:2px solid #333;border-radius:4px;padding:5px 8px;font-size:clamp(16px,2.5vw,26px);line-height:1;text-align:center;min-width:40px">🛑</div>
+      <!-- Pole going down -->
+      <div style="width:4px;height:50px;background:#555"></div>
+      <!-- Base -->
+      <div style="width:14px;height:5px;background:#444;border-radius:2px"></div>
+    </div>
+
+    <!-- SIMULATION LAYER — JS-managed SVG hens and cars -->
+    <div id="sim-layer" style="position:absolute;inset:0;pointer-events:none;z-index:12"></div>
+
+    <!-- JAYWALKER HEN — JS will position and animate this walking down into road -->
+    <div id="jayhen-container" style="position:absolute;z-index:14;display:block">
+      <div class="detect-box" id="jay-detect-box" style="inset:-8px;position:absolute;display:none">
+        <div class="detect-label">⚠️ JAYHEN DETECTED</div>
+      </div>
+      <svg class="hen-svg" width="46" height="46" viewBox="0 0 44 44" id="jayhen-svg">
+        <ellipse cx="22" cy="28" rx="11" ry="9" fill="#e74c3c"/>
+        <ellipse cx="19" cy="29" rx="7" ry="5" fill="#c0392b" transform="rotate(-10 19 29)"/>
+        <path d="M33 25 Q40 18 38 28 Q36 22 33 27Z" fill="#c0392b"/>
+        <path d="M33 24 Q41 15 37 26Z" fill="#e74c3c"/>
+        <ellipse cx="14" cy="22" rx="5" ry="6" fill="#e74c3c"/>
+        <circle cx="11" cy="16" r="7" fill="#e74c3c"/>
+        <circle cx="9" cy="15" r="1.5" fill="#fff"/>
+        <circle cx="9" cy="15" r="0.7" fill="#222"/>
+        <path d="M5 16 L2 14 L5 14Z" fill="#e67e22"/>
+        <path d="M11 9 Q12 6 13 9 Q14 6 15 9 Q14 7 11 9Z" fill="#c0392b"/>
+        <ellipse cx="7" cy="19" rx="2" ry="3" fill="#c0392b"/>
+        <line x1="18" y1="37" x2="14" y2="43" stroke="#e67e22" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="22" y1="37" x2="26" y2="43" stroke="#e67e22" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="14" y1="43" x2="11" y2="43" stroke="#e67e22" stroke-width="1.5"/>
+        <line x1="14" y1="43" x2="14" y2="44" stroke="#e67e22" stroke-width="1.5"/>
+        <line x1="26" y1="43" x2="29" y2="43" stroke="#e67e22" stroke-width="1.5"/>
+        <line x1="26" y1="43" x2="26" y2="44" stroke="#e67e22" stroke-width="1.5"/>
+      </svg>
+    </div>
+
+    <!-- AI scan overlay — shown when jayhen detected -->
+    <div id="jayhen-scanzone" style="position:absolute;top:54%;left:40%;width:20%;height:22%;border:2px solid rgba(232,160,32,0.4);background:rgba(139,26,26,0.08);z-index:6;pointer-events:none;display:none">
+      <div style="position:absolute;top:4px;left:4px;font-size:9px;color:rgba(232,160,32,0.7);font-family:'Special Elite',serif;letter-spacing:0.05em">📡 AI SCAN ZONE</div>
+    </div>
+
+    <!-- STATUS PANEL -->
+    <div class="status-panel">
+      <div style="font-family:'Rye',serif;font-size:clamp(11px,1.4vw,14px);color:var(--gold);margin-bottom:10px;letter-spacing:0.05em;border-bottom:1px solid var(--gold);padding-bottom:6px">
+        ⭐ SYSTEM STATUS
+      </div>
+      <div style="display:flex;flex-direction:column;gap:7px" id="status-lines">
+        <div><span class="status-dot dot-red" style="animation-duration:0.6s"></span><span id="st-light">🔴 Cars: GREEN — Hens: STOP</span></div>
+        <div><span class="status-dot dot-amber"></span>JAYHEN flagged</div>
+        <div><span class="status-dot dot-amber"></span>Photo captured</div>
+        <div><span class="status-dot dot-gold"></span>Snowflake: logging...</div>
+      </div>
+      <div style="margin-top:12px;font-size:clamp(9px,1.1vw,11px);color:var(--sage)">
+        Next phase: <span id="st-timer" style="color:var(--green)">5s</span>
+      </div>
+      <div style="margin-top:6px">
+        <div style="font-size:clamp(8px,1vw,10px);color:var(--cream);margin-bottom:3px">PHASE TIMER</div>
+        <div style="height:6px;background:#333;border-radius:3px;border:1px solid var(--gold);overflow:hidden">
+          <div id="phase-bar" style="height:100%;width:100%;background:linear-gradient(90deg,var(--green),var(--amber));border-radius:3px;transition:width 1s linear"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VOICE BUBBLE -->
+    <div class="voice-bubble" id="voice-bubble">
+      🔊 <em id="voice-text">"STOP! Cars have the green. Wait yer turn, hen!"</em>
+    </div>
+
+    <!-- Slide title -->
+    <div style="position:absolute;top:1.5%;left:0;right:0;text-align:center;z-index:50">
+      <div style="font-family:'Rye',serif;font-size:clamp(14px,2.5vw,26px);color:var(--gold);letter-spacing:0.08em;text-shadow:2px 2px 0 rgba(0,0,0,0.5)">
+        🌅  HIGH NOON AT THE HEN-TERSECTION  🌅
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       SLIDE 4 — FEATURES
+  ══════════════════════════════════════════ -->
+  <div class="slide" id="slide-4">
+    <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 30% 20%,#3D1F0A,#1A0A04 70%)"></div>
+    <!-- Decorative star pattern -->
+    <div style="position:absolute;inset:0;background-image:radial-gradient(circle,rgba(212,160,23,0.06) 1px,transparent 1px);background-size:40px 40px"></div>
+
+    <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:clamp(12px,2vw,32px)">
+      <div class="slide-title" style="margin-bottom:clamp(12px,2vw,24px);animation:fadeUp 0.6s 0.1s both">
+        ⭐  SIX-SHOOTER FEATURES  ⭐
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(10px,1.5vw,20px);width:100%;max-width:1100px">
+        <div class="feature-card" style="animation-delay:0.2s">
+          <div style="font-size:clamp(28px,4vw,44px);margin-bottom:8px">📷</div>
+          <div style="font-family:'Rye',serif;font-size:clamp(12px,1.6vw,17px);color:var(--gold);margin-bottom:6px">AI DETECTION</div>
+          <div style="font-family:'Special Elite',serif;font-size:clamp(10px,1.3vw,13px);color:var(--cream);line-height:1.5">Real-time COCO-SSD model detects pedestrians, mobility aids & jaywalkers via live webcam</div>
+        </div>
+        <div class="feature-card" style="animation-delay:0.3s">
+          <div style="font-size:clamp(28px,4vw,44px);margin-bottom:8px">⏱️</div>
+          <div style="font-family:'Rye',serif;font-size:clamp(12px,1.6vw,17px);color:var(--gold);margin-bottom:6px">SMART TIMING</div>
+          <div style="font-family:'Special Elite',serif;font-size:clamp(10px,1.3vw,13px);color:var(--cream);line-height:1.5">Crossing time auto-adjusts based on pedestrian count, mobility needs & peak hours</div>
+        </div>
+        <div class="feature-card" style="animation-delay:0.4s">
+          <div style="font-size:clamp(28px,4vw,44px);margin-bottom:8px">🦽</div>
+          <div style="font-family:'Rye',serif;font-size:clamp(12px,1.6vw,17px);color:var(--gold);margin-bottom:6px">ACCESSIBILITY</div>
+          <div style="font-family:'Special Elite',serif;font-size:clamp(10px,1.3vw,13px);color:var(--cream);line-height:1.5">Extends crossing time for wheelchair & cane users — detected automatically, no input needed</div>
+        </div>
+        <div class="feature-card" style="animation-delay:0.5s">
+          <div style="font-size:clamp(28px,4vw,44px);margin-bottom:8px">⚠️</div>
+          <div style="font-family:'Rye',serif;font-size:clamp(12px,1.6vw,17px);color:var(--gold);margin-bottom:6px">JAYWALKER ALERT</div>
+          <div style="font-family:'Special Elite',serif;font-size:clamp(10px,1.3vw,13px);color:var(--cream);line-height:1.5">Detects red-phase crossings, triggers yellow warning, captures timestamped photo for records</div>
+        </div>
+        <div class="feature-card" style="animation-delay:0.6s">
+          <div style="font-size:clamp(28px,4vw,44px);margin-bottom:8px">🔊</div>
+          <div style="font-family:'Rye',serif;font-size:clamp(12px,1.6vw,17px);color:var(--gold);margin-bottom:6px">VOICE GUIDANCE</div>
+          <div style="font-family:'Special Elite',serif;font-size:clamp(10px,1.3vw,13px);color:var(--cream);line-height:1.5">Text-to-speech instructs pedestrians in real time — customizable in Admin panel</div>
+        </div>
+        <div class="feature-card" style="animation-delay:0.7s">
+          <div style="font-size:clamp(28px,4vw,44px);margin-bottom:8px">❄️</div>
+          <div style="font-family:'Rye',serif;font-size:clamp(12px,1.6vw,17px);color:var(--gold);margin-bottom:6px">SNOWFLAKE LOG</div>
+          <div style="font-family:'Special Elite',serif;font-size:clamp(10px,1.3vw,13px);color:var(--cream);line-height:1.5">Every event auto-saved to Snowflake with timestamps, images & violation records in real time</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       SLIDE 5 — SNOWFLAKE
+  ══════════════════════════════════════════ -->
+  <div class="slide" id="slide-5">
+    <div style="position:absolute;inset:0;background:linear-gradient(135deg,#F5EDD6,#E8D5A8)"></div>
+    <!-- Snowflakes -->
+    <div class="snowflake-float" style="left:10%;--dur:7s;--delay:0s">❄️</div>
+    <div class="snowflake-float" style="left:25%;--dur:9s;--delay:2s">❄️</div>
+    <div class="snowflake-float" style="left:45%;--dur:6s;--delay:1s">❄️</div>
+    <div class="snowflake-float" style="left:65%;--dur:8s;--delay:3s">❄️</div>
+    <div class="snowflake-float" style="left:80%;--dur:7.5s;--delay:0.5s">❄️</div>
+    <div class="snowflake-float" style="left:90%;--dur:10s;--delay:1.5s">❄️</div>
+
+    <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:clamp(14px,2vw,36px)">
+      <div style="font-family:'Rye',serif;font-size:clamp(22px,4vw,44px);color:var(--dark);text-align:center;margin-bottom:clamp(12px,2vw,24px);letter-spacing:0.06em;animation:fadeUp 0.6s 0.1s both">
+        ❄️  THE SALOON LEDGER  •  SNOWFLAKE  ❄️
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:clamp(14px,2vw,28px);width:100%;max-width:1000px">
+        <!-- Schema -->
+        <div class="dark-panel" style="padding:clamp(14px,2vw,24px);border-radius:6px;animation:cardSlideIn 0.7s 0.3s both">
+          <div style="font-family:'Rye',serif;font-size:clamp(13px,1.8vw,18px);color:var(--gold);margin-bottom:10px;letter-spacing:0.05em">📋 TABLE SCHEMA</div>
+          <div style="border-top:1px solid var(--gold);margin-bottom:12px"></div>
+          <div style="font-family:'Courier New',monospace;font-size:clamp(9px,1.2vw,13px);color:var(--amber);margin-bottom:6px;font-weight:bold">JAYWALKING_VIOLATIONS</div>
+          <div style="display:flex;flex-direction:column;gap:4px;font-family:'Courier New',monospace;font-size:clamp(8px,1.1vw,12px)">
+            <div style="color:#aaa">  violation_id   STRING</div>
+            <div style="color:var(--green)">  timestamp      TIMESTAMP ★</div>
+            <div style="color:#aaa">  severity       STRING</div>
+            <div style="color:#aaa">  description    TEXT</div>
+            <div style="color:var(--green)">  image_data     TEXT (base64) ★</div>
+            <div style="color:#aaa">  image_filename STRING</div>
+            <div style="color:#aaa">  pedestrian_id  STRING</div>
+            <div style="color:#aaa">  location       STRING</div>
+          </div>
+          <div style="margin-top:10px;font-size:clamp(9px,1.1vw,11px);color:var(--sage);font-family:'Special Elite',serif">★ auto-populated on every event</div>
+        </div>
+        <!-- Flow -->
+        <div class="dark-panel" style="padding:clamp(14px,2vw,24px);border-radius:6px;animation:cardReveal 0.7s 0.4s both">
+          <div style="font-family:'Rye',serif;font-size:clamp(13px,1.8vw,18px);color:var(--gold);margin-bottom:10px;letter-spacing:0.05em">🔄 HOW IT FLOWS</div>
+          <div style="border-top:1px solid var(--gold);margin-bottom:12px"></div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;gap:10px;align-items:center">
+              <div style="background:var(--red);color:white;font-family:'Rye',serif;font-size:11px;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</div>
+              <div style="font-family:'Special Elite',serif;font-size:clamp(10px,1.3vw,13px);color:var(--cream)">Jaywalker detected by AI</div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center">
+              <div style="background:var(--amber);color:var(--dark);font-family:'Rye',serif;font-size:11px;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</div>
+              <div style="font-family:'Special Elite',serif;font-size:clamp(10px,1.3vw,13px);color:var(--cream)">Photo + timestamp captured</div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center">
+              <div style="background:var(--sky);color:var(--dark);font-family:'Rye',serif;font-size:11px;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</div>
+              <div style="font-family:'Special Elite',serif;font-size:clamp(10px,1.3vw,13px);color:var(--cream)">POST to localhost:5050</div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center">
+              <div style="background:var(--sage);color:white;font-family:'Rye',serif;font-size:11px;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">4</div>
+              <div style="font-family:'Special Elite',serif;font-size:clamp(10px,1.3vw,13px);color:var(--cream)">Hen-tersection.py inserts record</div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center">
+              <div style="background:var(--green);color:white;font-family:'Rye',serif;font-size:11px;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">5</div>
+              <div style="font-family:'Special Elite',serif;font-size:clamp(10px,1.3vw,13px);color:var(--cream)">Snowflake table updated instantly</div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center">
+              <div style="background:var(--gold);color:var(--dark);font-family:'Rye',serif;font-size:11px;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">6</div>
+              <div style="font-family:'Special Elite',serif;font-size:clamp(10px,1.3vw,13px);color:var(--cream)">Query or download photos anytime</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:clamp(12px,2vw,20px);background:var(--dark);border:2px solid var(--gold);padding:10px 24px;border-radius:4px;font-family:'Courier New',monospace;font-size:clamp(10px,1.3vw,13px);color:var(--green);animation:fadeUp 0.6s 0.6s both">
+        GET http://localhost:5050/api/violations/{id}/image  →  downloads photo
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       SLIDE 6 — CALL TO ACTION
+  ══════════════════════════════════════════ -->
+  <div class="slide" id="slide-6">
+    <div style="position:absolute;inset:0;background:linear-gradient(180deg,#0D0500 0%,#3D1F0A 25%,#8B3A0A 55%,#D4630A 72%,#D4A017 88%,#F5C842 100%)"></div>
+
+    <!-- Rays -->
+    <svg class="sunset-rays" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+      <g stroke="white" stroke-width="2" opacity="0.8">
+        <line x1="150" y1="150" x2="150" y2="0"/>
+        <line x1="150" y1="150" x2="300" y2="150"/>
+        <line x1="150" y1="150" x2="150" y2="300"/>
+        <line x1="150" y1="150" x2="0" y2="150"/>
+        <line x1="150" y1="150" x2="256" y2="44"/>
+        <line x1="150" y1="150" x2="256" y2="256"/>
+        <line x1="150" y1="150" x2="44" y2="256"/>
+        <line x1="150" y1="150" x2="44" y2="44"/>
+        <line x1="150" y1="150" x2="220" y2="20"/>
+        <line x1="150" y1="150" x2="280" y2="80"/>
+        <line x1="150" y1="150" x2="280" y2="220"/>
+        <line x1="150" y1="150" x2="220" y2="280"/>
+        <line x1="150" y1="150" x2="80" y2="280"/>
+        <line x1="150" y1="150" x2="20" y2="220"/>
+        <line x1="150" y1="150" x2="20" y2="80"/>
+        <line x1="150" y1="150" x2="80" y2="20"/>
+      </g>
+    </svg>
+
+    <!-- Ground -->
+    <div style="position:absolute;bottom:0;left:0;right:0;height:22%;background:linear-gradient(180deg,#2B1810,#0D0500)"></div>
+
+    <!-- Road into horizon -->
+    <div style="position:absolute;bottom:22%;left:40%;right:40%;height:18%;background:rgba(0,0,0,0.6);clip-path:polygon(20%,0%,80%,0%,100%,100%,0%,100%)"></div>
+
+    <!-- Cacti -->
+    <div style="position:absolute;bottom:20%;left:4%;font-size:clamp(60px,10vw,120px);filter:brightness(0.3) sepia(0.5)">🌵</div>
+    <div style="position:absolute;bottom:20%;left:12%;font-size:clamp(40px,6vw,80px);filter:brightness(0.3) sepia(0.5)">🌵</div>
+    <div style="position:absolute;bottom:20%;right:5%;font-size:clamp(60px,9vw,110px);filter:brightness(0.3) sepia(0.5)">🌵</div>
+    <div style="position:absolute;bottom:20%;right:13%;font-size:clamp(35px,5.5vw,70px);filter:brightness(0.3) sepia(0.5)">🌵</div>
+
+    <!-- Hero chicken -->
+    <div class="hero-rider" style="bottom:25%">🐔</div>
+
+    <!-- Text -->
+    <div style="position:absolute;top:6%;left:0;right:0;text-align:center">
+      <div style="font-family:'Rye',serif;font-size:clamp(36px,7vw,80px);color:var(--gold);letter-spacing:0.1em;text-shadow:3px 3px 0 rgba(0,0,0,0.5),0 0 40px rgba(212,160,23,0.4);animation:wantedBounce 0.8s 0.2s both">
+        RIDE WITH US
+      </div>
+      <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:clamp(16px,2.5vw,28px);color:var(--cream);margin-top:8px;text-shadow:2px 2px 8px rgba(0,0,0,0.6);animation:fadeUp 0.6s 0.5s both">
+        into a safer tomorrow
+      </div>
+    </div>
+
+    <!-- CTA cards -->
+    <div style="position:absolute;bottom:4%;left:0;right:0;display:flex;justify-content:center;gap:clamp(10px,2vw,24px);padding:0 clamp(16px,3vw,40px)">
+      <div style="background:rgba(43,24,16,0.75);border:2px solid var(--gold);border-radius:6px;padding:clamp(10px,1.5vw,18px) clamp(14px,2vw,24px);text-align:center;flex:1;max-width:220px;backdrop-filter:blur(8px);animation:statPop 0.5s 0.4s both">
+        <div style="font-size:clamp(24px,3.5vw,40px)">🌐</div>
+        <div style="font-family:'Special Elite',serif;font-size:clamp(10px,1.3vw,13px);color:var(--cream);margin-top:6px">Open SmartCross.html<br>and start the camera</div>
+      </div>
+      <div style="background:rgba(43,24,16,0.75);border:2px solid var(--gold);border-radius:6px;padding:clamp(10px,1.5vw,18px) clamp(14px,2vw,24px);text-align:center;flex:1;max-width:220px;backdrop-filter:blur(8px);animation:statPop 0.5s 0.55s both">
+        <div style="font-size:clamp(24px,3.5vw,40px)">💻</div>
+        <div style="font-family:'Special Elite',serif;font-size:clamp(10px,1.3vw,13px);color:var(--cream);margin-top:6px">Run Hen-tersection.py<br>to connect Snowflake</div>
+      </div>
+      <div style="background:rgba(43,24,16,0.75);border:2px solid var(--gold);border-radius:6px;padding:clamp(10px,1.5vw,18px) clamp(14px,2vw,24px);text-align:center;flex:1;max-width:220px;backdrop-filter:blur(8px);animation:statPop 0.5s 0.7s both">
+        <div style="font-size:clamp(24px,3.5vw,40px)">🏆</div>
+        <div style="font-family:'Special Elite',serif;font-size:clamp(10px,1.3vw,13px);color:var(--cream);margin-top:6px">Safer crosswalks,<br>live — today</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── NAVIGATION ── -->
+<div id="nav">
+  <button onclick="prevSlide()" title="Previous">◀</button>
+  <div class="dot-nav" id="dot-nav"></div>
+  <button onclick="nextSlide()" title="Next">▶</button>
+  <span id="slide-counter">1 / 6</span>
+</div>
+
+<script>
+  // ── CURSOR ──
+  const cursor = document.getElementById('cursor');
+  document.addEventListener('mousemove', e => {
+    cursor.style.left = e.clientX + 'px';
+    cursor.style.top  = e.clientY + 'px';
+  });
+  document.addEventListener('mousedown', () => cursor.style.transform = 'translate(-50%,-50%) scale(1.4)');
+  document.addEventListener('mouseup',   () => cursor.style.transform = 'translate(-50%,-50%) scale(1)');
+
+  // ── SLIDES ──
+  const slides = document.querySelectorAll('.slide');
+  const total  = slides.length;
+  let current  = 0;
+
+  function goTo(n) {
+    if (n < 0 || n >= total) return;
+    const prev = slides[current];
+    current = n;
+    const next = slides[current];
+
+    prev.classList.add('exiting');
+    prev.classList.remove('active');
+    setTimeout(() => prev.classList.remove('exiting'), 500);
+
+    next.classList.add('active', 'entering');
+    setTimeout(() => next.classList.remove('entering'), 700);
+
+    updateNav();
+  }
+
+  function nextSlide() { goTo(current + 1); }
+  function prevSlide() { goTo(current - 1); }
+
+  // Keyboard
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
+    if (e.key === 'ArrowLeft')  prevSlide();
+    if (e.key === 'Home') goTo(0);
+    if (e.key === 'End')  goTo(total - 1);
+  });
+
+  // ── NAV DOTS ──
+  const dotNav = document.getElementById('dot-nav');
+  for (let i = 0; i < total; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.onclick = () => goTo(i);
+    dotNav.appendChild(d);
+  }
+
+  function updateNav() {
+    document.getElementById('slide-counter').textContent = `${current + 1} / ${total}`;
+    document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === current));
+    document.getElementById('progress-bar').style.width = `${((current + 1) / total) * 100}%`;
+  }
+  updateNav();
+
+  // ══════════════════════════════════════════
+  //   HEN-TERSECTION SIMULATION v5
+  // ══════════════════════════════════════════
+  (function() {
+
+    // ── Phase durations ──
+    const GREEN_DUR  = 10000;  // cars move freely
+    const YELLOW_DUR = 2500;   // cars slow & stop
+    const RED_DUR    = 9000;   // hens cross, jayhen safe
+
+    // ── Jayhen walk states ──
+    // 'sidewalk'  → walking down top sidewalk toward crosswalk
+    // 'crosswalk' → stopped on crosswalk entry, detected, light changing
+    // 'crossing'  → once red, she walks the rest of the way across
+    // 'done'      → reached bottom, hide until reset
+    const JAY_X         = 47;    // % — x position on the crosswalk
+    const JAY_SIDEWALK_Y = 45;   // % — starting y (closer to road)
+    const JAY_ENTRY_Y   = 49.5;  // % — crosswalk top edge (triggers detection)
+    const JAY_CROSS_END = 78;    // % — bottom of road where she finishes
+    const JAY_WALK_SPD  = 0.0015; // % per ms downward
+
+    let jayState = 'sidewalk';
+    let jayY     = JAY_SIDEWALK_Y;
+    let detectionFired = false;
+
+    // ── Phase state ──
+    let phase      = 'cars-green';
+    let phaseStart = Date.now();
+    let phaseDur   = GREEN_DUR;
+    let carsStopped = false;
+
+    // ── Helpers ──
+    function shadeColor(hex, pct) {
+      const n = parseInt(hex.replace('#',''), 16);
+      const r = Math.min(255, Math.max(0, ((n>>16)&0xff)+pct));
+      const g = Math.min(255, Math.max(0, ((n>>8)&0xff)+pct));
+      const b = Math.min(255, Math.max(0, (n&0xff)+pct));
+      return '#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');
+    }
+
+    function makeSVGHen(size, color, bodyColor) {
+      color     = color     || '#c0392b';
+      bodyColor = bodyColor || '#922b21';
+      size      = size      || 38;
+      const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+      svg.setAttribute('width', size);
+      svg.setAttribute('height', size);
+      svg.setAttribute('viewBox','0 0 44 44');
+      svg.innerHTML = `
+        <ellipse cx="22" cy="28" rx="11" ry="9" fill="${color}"/>
+        <ellipse cx="19" cy="29" rx="7" ry="5" fill="${bodyColor}" transform="rotate(-10 19 29)"/>
+        <path d="M33 25 Q40 18 38 28 Q36 22 33 27Z" fill="${bodyColor}"/>
+        <path d="M33 24 Q41 15 37 26Z" fill="${color}"/>
+        <ellipse cx="14" cy="22" rx="5" ry="6" fill="${color}"/>
+        <circle cx="11" cy="16" r="7" fill="${color}"/>
+        <circle cx="9" cy="15" r="1.5" fill="#fff"/>
+        <circle cx="9" cy="15" r="0.7" fill="#222"/>
+        <path d="M5 16 L3 14 L5 14Z" fill="#e67e22"/>
+        <path d="M11 9 Q12 6 13 9 Q14 6 15 9 Q14 7 11 9Z" fill="#e74c3c"/>
+        <ellipse cx="7" cy="19" rx="2" ry="3" fill="#e74c3c"/>
+        <line x1="18" y1="37" x2="16" y2="43" stroke="#e67e22" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="22" y1="37" x2="24" y2="43" stroke="#e67e22" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="16" y1="43" x2="13" y2="43" stroke="#e67e22" stroke-width="1.5"/>
+        <line x1="16" y1="43" x2="16" y2="44" stroke="#e67e22" stroke-width="1.5"/>
+        <line x1="24" y1="43" x2="27" y2="43" stroke="#e67e22" stroke-width="1.5"/>
+        <line x1="24" y1="43" x2="24" y2="44" stroke="#e67e22" stroke-width="1.5"/>`;
+      return svg;
+    }
+
+    function makeSVGCar(size, color) {
+      color = color || '#1565C0';
+      size  = size  || 44;
+      const w = Math.round(size * 2.1);
+      const h = Math.round(size * 0.85);
+      const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+      svg.setAttribute('width', w);
+      svg.setAttribute('height', h);
+      svg.setAttribute('viewBox','0 0 90 38');
+      const dk = shadeColor(color, -35);
+      svg.innerHTML = `
+        <rect x="4" y="17" width="82" height="15" rx="4" fill="${color}"/>
+        <path d="M18 17 Q24 5 37 4 L62 4 Q74 5 78 17Z" fill="${color}"/>
+        <path d="M37 5 Q35 13 37 16 L61 16 Q63 12 62 5Z" fill="rgba(160,225,255,0.75)" stroke="${dk}" stroke-width="0.8"/>
+        <path d="M21 5 Q19 11 21 16 L35 16 Q37 12 37 5Z" fill="rgba(160,225,255,0.6)" stroke="${dk}" stroke-width="0.8"/>
+        <line x1="46" y1="5" x2="46" y2="32" stroke="${dk}" stroke-width="1.2"/>
+        <rect x="83" y="20" width="6" height="5" rx="2" fill="${shadeColor(color,-15)}"/>
+        <rect x="1" y="20" width="6" height="5" rx="2" fill="${shadeColor(color,-15)}"/>
+        <ellipse cx="86" cy="21" rx="3" ry="2.2" fill="#fff9c4"/>
+        <ellipse cx="85" cy="21" rx="1.5" ry="1.5" fill="#ffee44" opacity="0.9"/>
+        <ellipse cx="4" cy="21" rx="3" ry="2.2" fill="#e53935"/>
+        <circle cx="20" cy="33" r="6" fill="#222"/>
+        <circle cx="20" cy="33" r="3.5" fill="#555"/>
+        <circle cx="20" cy="33" r="1.2" fill="#aaa"/>
+        <circle cx="68" cy="33" r="6" fill="#222"/>
+        <circle cx="68" cy="33" r="3.5" fill="#555"/>
+        <circle cx="68" cy="33" r="1.2" fill="#aaa"/>
+        <rect x="49" y="21" width="5" height="2" rx="1" fill="${dk}"/>
+        <rect x="31" y="21" width="5" height="2" rx="1" fill="${dk}"/>`;
+      return svg;
+    }
+
+    const simLayer  = document.getElementById('sim-layer');
+    const carColors = ['#1565C0','#B71C1C','#1B5E20','#4A148C','#E65100','#37474F','#006064','#4E342E','#880E4F'];
+    const MIN_GAP   = 28;
+    const CAR_W     = 18;
+
+    function spawnCar(lane, startX) {
+      const wrapper = document.createElement('div');
+      wrapper.style.cssText = 'position:absolute;z-index:10;';
+      const color = carColors[Math.floor(Math.random()*carColors.length)];
+      const size  = 36 + Math.random()*8;
+      const svg   = makeSVGCar(size, color);
+      if (lane === 0) {
+        wrapper.style.transform = 'scaleX(-1)';
+        wrapper.style.top = (54 + Math.random()*4) + '%';
+        wrapper.dataset.dir = '-1';
+      } else {
+        wrapper.style.top = (64 + Math.random()*4) + '%';
+        wrapper.dataset.dir = '1';
+      }
+      wrapper.appendChild(svg);
+      wrapper.dataset.x     = startX;
+      wrapper.dataset.speed = (0.011 + Math.random()*0.004);
+      wrapper.dataset.lane  = lane;
+      wrapper.style.left    = startX + 'vw';
+      simLayer.appendChild(wrapper);
+      return wrapper;
+    }
+
+    const lane0Cars = [];
+    const lane1Cars = [];
+    [80, 80-MIN_GAP-CAR_W, 80-2*(MIN_GAP+CAR_W)].forEach(x => lane0Cars.push(spawnCar(0, x)));
+    [-5, -5+MIN_GAP+CAR_W, -5+2*(MIN_GAP+CAR_W)].forEach(x => lane1Cars.push(spawnCar(1, x)));
+    const cars = [...lane0Cars, ...lane1Cars];
+
+    // ── Ambient hens around town ──
+    const ambientData = [
+      { x:2,   y:44.5, size:30, c:['#c0392b','#922b21'], delay:0.0, flip:false },
+      { x:7,   y:45.5, size:28, c:['#8e44ad','#6c3483'], delay:0.6, flip:true  },
+      { x:13,  y:43.5, size:32, c:['#d35400','#a04000'], delay:1.1, flip:false },
+      { x:19,  y:85,   size:28, c:['#16a085','#0e6655'], delay:0.3, flip:true  },
+      { x:26,  y:82,   size:30, c:['#2980b9','#1a5276'], delay:0.8, flip:false },
+      { x:5,   y:79,   size:26, c:['#c0392b','#7b241c'], delay:1.5, flip:false },
+      { x:12,  y:81,   size:28, c:['#27ae60','#1a7a40'], delay:0.2, flip:true  },
+      { x:63,  y:44,   size:30, c:['#f39c12','#b7770d'], delay:0.4, flip:false },
+      { x:70,  y:82,   size:28, c:['#8e44ad','#6c3483'], delay:0.9, flip:true  },
+      { x:78,  y:45,   size:26, c:['#e74c3c','#c0392b'], delay:0.5, flip:false },
+      { x:85,  y:80,   size:30, c:['#1abc9c','#0e8070'], delay:1.2, flip:true  },
+      { x:92,  y:44.5, size:28, c:['#d35400','#8c3a00'], delay:0.7, flip:false },
+    ];
+    ambientData.forEach(d => {
+      const el = document.createElement('div');
+      el.style.cssText = `position:absolute;left:${d.x}%;top:${d.y}%;z-index:11;filter:drop-shadow(1px 3px 3px rgba(0,0,0,0.4))`;
+      if (d.flip) el.style.transform = 'scaleX(-1)';
+      const svg = makeSVGHen(d.size, d.c[0], d.c[1]);
+      svg.classList.add('hen-pecking');
+      svg.style.animationDelay = d.delay + 's';
+      el.appendChild(svg);
+      simLayer.appendChild(el);
+    });
+
+    // ── Crossing hens (top → bottom during red) ──
+    const crossStartY = [49, 51, 50];
+    const crossX      = [42, 47.5, 53];
+    const crossColors = [['#2ecc71','#1a7a43'],['#f39c12','#b7770d'],['#3498db','#1a5276']];
+    const crossHens   = crossX.map((cx, i) => {
+      const el = document.createElement('div');
+      el.style.cssText = `position:absolute;left:${cx}%;top:${crossStartY[i]}%;z-index:13;opacity:1;filter:drop-shadow(2px 4px 4px rgba(0,0,0,0.5))`;
+      const svg = makeSVGHen(38, crossColors[i][0], crossColors[i][1]);
+      svg.classList.add('hen-wait');
+      svg.style.animationDelay = (i*0.2)+'s';
+      el.appendChild(svg);
+      el.dataset.x = cx;
+      el.dataset.y = crossStartY[i];
+      el.dataset.active = 'false';
+      simLayer.appendChild(el);
+      return el;
+    });
+
+    function resetCrossHens() {
+      crossHens.forEach((el, i) => {
+        el.dataset.x = crossX[i];
+        el.dataset.y = crossStartY[i];
+        el.style.left = crossX[i] + '%';
+        el.style.top  = crossStartY[i] + '%';
+        el.dataset.active = 'false';
+        el.style.opacity  = '1';
+        // Switch back to waiting animation
+        const svg = el.querySelector('svg');
+        if (svg) { svg.classList.remove('hen-walking'); svg.classList.add('hen-wait'); }
+      });
+    }
+
+    // ── Jayhen DOM refs ──
+    const jayContainer = document.getElementById('jayhen-container');
+    const jayDetectBox = document.getElementById('jay-detect-box');
+    const jayhenSVG    = document.getElementById('jayhen-svg');
+    const jayScanzone  = document.getElementById('jayhen-scanzone');
+
+    // Position jayhen at start — on sidewalk above crosswalk, already detected
+    jayContainer.style.left    = JAY_X + '%';
+    jayContainer.style.top     = JAY_SIDEWALK_Y + '%';
+    jayContainer.style.display = 'block';
+    jayhenSVG.classList.add('hen-walking');
+    // Detection box ON from the start — she's a known jayhen about to cross
+    jayDetectBox.style.display = 'block';
+    jayScanzone.style.display  = 'block';
+
+    function resetJayhen() {
+      jayState = 'sidewalk';
+      jayY     = JAY_SIDEWALK_Y;
+      detectionFired = false;
+      jayContainer.style.left    = JAY_X + '%';
+      jayContainer.style.top     = JAY_SIDEWALK_Y + '%';
+      jayContainer.style.display = 'block';
+      jayDetectBox.style.display  = 'block';
+      jayScanzone.style.display   = 'block';
+      jayhenSVG.classList.remove('hen-running');
+      jayhenSVG.classList.add('hen-walking');
+    }
+
+    // ── UI refs ──
+    const bulbR     = document.getElementById('bulb-red-el');
+    const bulbY     = document.getElementById('bulb-yellow-el');
+    const bulbG     = document.getElementById('bulb-green-el');
+    const pedSig    = document.getElementById('ped-signal');
+    const stLight   = document.getElementById('st-light');
+    const stTimer   = document.getElementById('st-timer');
+    const phaseBar  = document.getElementById('phase-bar');
+    const voiceText = document.getElementById('voice-text');
+
+    function setLight(p) {
+      bulbR.style.background = '#1a1a1a'; bulbR.style.boxShadow = 'none';
+      bulbY.style.background = '#1a1a1a'; bulbY.style.boxShadow = 'none';
+      bulbG.style.background = '#1a1a1a'; bulbG.style.boxShadow = 'none';
+      if (p === 'cars-green') {
+        bulbG.style.background = '#2D7A2D';
+        bulbG.style.boxShadow  = '0 0 16px rgba(45,122,45,1),0 0 30px rgba(45,122,45,0.5)';
+        pedSig.textContent      = '🛑';
+        pedSig.style.background = '#8B1A1A';
+        stLight.textContent     = '🟢 Cars: GO — Hens: STOP';
+        voiceText.textContent   = '"Cars movin\' through — hens, stay on the sidewalk!"';
+      } else if (p === 'yellow') {
+        bulbY.style.background = '#E8A020';
+        bulbY.style.boxShadow  = '0 0 16px rgba(232,160,32,1),0 0 30px rgba(232,160,32,0.5)';
+        pedSig.textContent      = '⚠️';
+        pedSig.style.background = '#3a3000';
+        stLight.textContent     = '🟡 JAYHEN DETECTED — Cars slowing!';
+        voiceText.textContent   = '"⚠️ AI detected a jayhen on the crosswalk! Triggerin\' yellow — slow down, pardner!"';
+      } else {
+        // red
+        bulbR.style.background = '#8B1A1A';
+        bulbR.style.boxShadow  = '0 0 16px rgba(139,26,26,1),0 0 30px rgba(139,26,26,0.5)';
+        pedSig.textContent      = '🐔';
+        pedSig.style.background = '#1B5E20';
+        stLight.textContent     = '🔴 Cars: STOP — Hens: WALK!';
+        voiceText.textContent   = '"Red light! Cars stopped. Jayhen is safe — all hens cross now, yeehaw!"';
+      }
+    }
+
+    // ── Car stop logic ──
+    // Crosswalk painted stripes: ~40%–60% of viewport.
+    // Lane 0 (right→left, dir=-1): front of car = x + CAR_W. Must stop so front < CW_L (left edge).
+    // Lane 1 (left→right, dir=+1): front of car = x.         Must stop so front > CW_R (right edge).
+    // Stop window: car is within 28vw behind the stop line (enough to catch fast-approaching cars).
+    const CW_L       = 40;   // left edge of crosswalk stripes
+    const CW_R       = 60;   // right edge of crosswalk stripes
+    const STOP_LINE_L = CW_L - 4;  // where left-going cars stop (front edge) — well before crosswalk
+    const STOP_LINE_R = CW_R + 4;  // where right-going cars stop (front edge) — well before crosswalk
+
+    function shouldCarStop(car) {
+      if (!carsStopped) return false;
+      const x   = parseFloat(car.dataset.x);
+      const dir = parseFloat(car.dataset.dir);
+      if (dir < 0) {
+        // right→left: front = x + CAR_W. Stop when front reaches the stop line (left of crosswalk).
+        // Clamp the car so its front edge sits exactly at STOP_LINE_L — never on the crosswalk.
+        const front = x + CAR_W;
+        if (front >= STOP_LINE_L) {
+          const clampX = STOP_LINE_L - CAR_W;
+          car.dataset.x  = clampX + '';
+          car.style.left = clampX + 'vw';
+          return true;
+        }
+        return false;
+      } else {
+        // left→right: front = x. Stop when front reaches STOP_LINE_R (right of crosswalk).
+        // Clamp the car so its front edge sits exactly at STOP_LINE_R — never on the crosswalk.
+        if (x >= STOP_LINE_R) {
+          car.dataset.x  = STOP_LINE_R + '';
+          car.style.left = STOP_LINE_R + 'vw';
+          return true;
+        }
+        return false;
+      }
+    }
+
+    function enforceGaps() {
+      // Lane 0 moving right→left: sort by x ascending (smallest x = furthest left = front of lane)
+      const l0 = [...lane0Cars].sort((a,b) => parseFloat(a.dataset.x) - parseFloat(b.dataset.x));
+      for (let i = 1; i < l0.length; i++) {
+        const frontX = parseFloat(l0[i-1].dataset.x);
+        const backX  = parseFloat(l0[i].dataset.x);
+        // back car must be at least CAR_W + MIN_GAP to the RIGHT of front car
+        if (backX - frontX < CAR_W + MIN_GAP) {
+          const newX = frontX + CAR_W + MIN_GAP;
+          l0[i].dataset.x = newX + '';
+          l0[i].style.left = newX + 'vw';  // ← must update visual too
+        }
+      }
+      // Lane 1 moving left→right: sort by x descending (largest x = furthest right = front of lane)
+      const l1 = [...lane1Cars].sort((a,b) => parseFloat(b.dataset.x) - parseFloat(a.dataset.x));
+      for (let i = 1; i < l1.length; i++) {
+        const frontX = parseFloat(l1[i-1].dataset.x);
+        const backX  = parseFloat(l1[i].dataset.x);
+        // back car must be at least CAR_W + MIN_GAP to the LEFT of front car
+        if (frontX - backX < CAR_W + MIN_GAP) {
+          const newX = frontX - CAR_W - MIN_GAP;
+          l1[i].dataset.x = newX + '';
+          l1[i].style.left = newX + 'vw';  // ← must update visual too
+        }
+      }
+    }
+
+    let lastTime = 0;
+    function tick(ts) {
+      const dt        = Math.min(ts - lastTime, 80);
+      lastTime        = ts;
+      const now       = Date.now();
+      const elapsed   = now - phaseStart;
+      const remaining = Math.max(0, phaseDur - elapsed);
+
+      // ══ JAYHEN LOGIC ══
+      if (jayState === 'sidewalk') {
+        // Walk down from sidewalk toward crosswalk entry after 1.5s
+        if (elapsed > 1500 || phase !== 'cars-green') {
+          jayY += JAY_WALK_SPD * dt;
+          jayContainer.style.top = jayY + '%';
+        }
+        // She reaches the crosswalk top edge — DETECTION FIRES
+        if (jayY >= JAY_ENTRY_Y && !detectionFired) {
+          detectionFired = true;
+          jayState = 'crosswalk';
+          // Show detection box and scan zone
+          jayDetectBox.style.display = 'block';
+          jayScanzone.style.display  = 'block';
+          jayhenSVG.classList.remove('hen-walking');
+          jayhenSVG.classList.add('hen-running'); // panicked run!
+          // Immediately trigger yellow
+          phase      = 'yellow';
+          phaseStart = now;
+          phaseDur   = YELLOW_DUR;
+          carsStopped = true;
+          setLight('yellow');
+        }
+      } else if (jayState === 'crosswalk') {
+        // She's on the crosswalk, detected, keep walking slowly down during yellow
+        // She stays visible but slows (nervous)
+        jayY += JAY_WALK_SPD * 0.4 * dt;
+        jayContainer.style.top = jayY + '%';
+        // Once we go red she can cross freely
+        if (phase === 'hens-cross') {
+          jayState = 'crossing';
+        }
+      } else if (jayState === 'crossing') {
+        // Light is red, she walks across with the other hens
+        jayY += JAY_WALK_SPD * dt;
+        jayContainer.style.top = jayY + '%';
+        if (jayY >= JAY_CROSS_END) {
+          jayState = 'done';
+          jayContainer.style.display = 'none';
+          jayDetectBox.style.display  = 'none';
+          jayScanzone.style.display   = 'none';
+        }
+      }
+
+      // ══ PHASE TRANSITIONS ══
+      if (elapsed >= phaseDur) {
+        phaseStart = now;
+        if (phase === 'yellow') {
+          phase    = 'hens-cross';
+          phaseDur = RED_DUR;
+          setLight('hens-cross');
+          // Jayhen stays on crosswalk — detection box hides, scan zone hides (she's safe now)
+          jayDetectBox.style.display = 'none';
+          jayScanzone.style.display  = 'none';
+          jayhenSVG.classList.remove('hen-running');
+          jayhenSVG.classList.add('hen-walking');
+          crossHens.forEach(el => { 
+            el.dataset.active='true'; 
+            el.style.opacity='1';
+            const svg = el.querySelector('svg');
+            if (svg) { svg.classList.remove('hen-wait'); svg.classList.add('hen-walking'); }
+          });
+        } else if (phase === 'hens-cross') {
+          phase       = 'cars-green';
+          phaseDur    = GREEN_DUR;
+          carsStopped = false;
+          setLight('cars-green');
+          resetCrossHens();
+          resetJayhen();
+        }
+        // 'cars-green' ends only when jayhen triggers detection, not by timer
+      }
+
+      // ── Timer UI ──
+      stTimer.textContent  = Math.ceil(remaining/1000) + 's';
+      phaseBar.style.width = ((remaining/phaseDur)*100) + '%';
+
+      // ── Move cars ──
+      cars.forEach(car => {
+        if (shouldCarStop(car)) return;
+        let x = parseFloat(car.dataset.x);
+        x += parseFloat(car.dataset.dir) * parseFloat(car.dataset.speed) * dt;
+        car.dataset.x = x;
+        car.style.left = x + 'vw';
+        if (parseFloat(car.dataset.dir) < 0 && x < -25) car.dataset.x = '115';
+        if (parseFloat(car.dataset.dir) > 0 && x > 115) car.dataset.x = '-25';
+      });
+      enforceGaps();
+
+      // ── Move crossing hens top→bottom ──
+      if (phase === 'hens-cross') {
+        crossHens.forEach((el, i) => {
+          if (el.dataset.active !== 'true') return;
+          let y = parseFloat(el.dataset.y);
+          if (y < 82) {
+            y += 0.0026 * dt * (0.85 + i * 0.07);
+            el.dataset.y = y;
+            el.style.top = y + '%';
+            let x = parseFloat(el.dataset.x);
+            x += Math.sin(ts * 0.0022 + i * 2.3) * 0.01;
+            el.dataset.x = x;
+            el.style.left = x + '%';
+          } else {
+            el.style.opacity = '0';
+            el.dataset.active = 'false';
+          }
+        });
+      }
+
+      requestAnimationFrame(tick);
+    }
+
+    setLight('cars-green');
+    requestAnimationFrame(ts => { lastTime = ts; requestAnimationFrame(tick); });
+  })();
+  // ── TOUCH SWIPE ──
+  let touchStartX = 0;
+  document.addEventListener('touchstart', e => touchStartX = e.touches[0].clientX, { passive: true });
+  document.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) > 50) dx < 0 ? nextSlide() : prevSlide();
+  });
+</script>
+</body>
+</html>

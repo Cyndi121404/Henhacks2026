@@ -10,19 +10,18 @@ RUN:
     python Hen-tersection.py
 
 The server starts on http://localhost:5050
-Then in SmartCross.html -> Admin -> Snowflake -> enter account -> toggle on -> Save Config
+Then open index.html -> Admin -> Snowflake -> enter account -> toggle on -> Save Config
 """
 
 import base64
 import io
+import json
 import uuid
 import sys
 from datetime import datetime, timezone
 
 # ─────────────────────────────────────────────────────────────────────────────
-# CHECK DEPENDENCIES BEFORE ANYTHING ELSE
-# Gives a clean error message if packages are missing instead of a confusing
-# module import crash
+# CHECK DEPENDENCIES
 # ─────────────────────────────────────────────────────────────────────────────
 def check_dependencies():
     missing = []
@@ -56,7 +55,6 @@ from snowflake.connector import DictCursor
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 
-
 # ─────────────────────────────────────────────────────────────────────────────
 # SNOWFLAKE CONNECTION CONFIG
 # ─────────────────────────────────────────────────────────────────────────────
@@ -71,7 +69,6 @@ CONFIG = {
     "autocommit": True,
 }
 
-# All account format variations to try if the first one fails
 ACCOUNT_FORMATS = [
     "IPMGUFF-RM98977",
     "ipmguff-rm98977",
@@ -81,21 +78,17 @@ ACCOUNT_FORMATS = [
     "rm98977",
 ]
 
-
 # ─────────────────────────────────────────────────────────────────────────────
 # FLASK APP
 # ─────────────────────────────────────────────────────────────────────────────
 app = Flask(__name__)
-CORS(app)  # Allow SmartCross.html (any origin) to POST here
-
+CORS(app)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # SNOWFLAKE CONNECTION HELPER
-# Tries multiple account formats automatically if the first fails
 # ─────────────────────────────────────────────────────────────────────────────
 def get_connection():
     last_error = None
-
     for account_fmt in ACCOUNT_FORMATS:
         try:
             conn = snowflake.connector.connect(
@@ -109,28 +102,17 @@ def get_connection():
                 autocommit=CONFIG["autocommit"],
                 login_timeout=15,
             )
-            # If we get here the connection worked — update config so we
-            # use the same format for every future connection
             CONFIG["account"] = account_fmt
             return conn
         except Exception as e:
             last_error = e
             continue
 
-    # None of the formats worked
     print("\n" + "=" * 60)
     print("ERROR - Could not connect to Snowflake.")
     print("Last error:", last_error)
-    print("\nThings to check:")
-    print("  1. Is your account identifier correct?")
-    print("     Go to Snowflake -> click your name bottom-left -> copy the account value")
-    print("  2. Is your username and password correct?")
-    print("  3. Is the CROSSWALK_WH warehouse running (not suspended)?")
-    print("     Go to Snowflake -> Admin -> Warehouses -> Resume if suspended")
-    print("  4. Does your user have ACCOUNTADMIN role?")
     print("=" * 60 + "\n")
     raise last_error
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CONNECTION TEST
@@ -144,30 +126,24 @@ def test_connection():
         row = cur.fetchone()
         conn.close()
         print(f"  OK - Connected as user={row[0]}  account={row[1]}  time={row[2]}")
-        print(f"  OK - Using account format: {CONFIG['account']}")
         return True
     except Exception as e:
         print(f"  FAILED - {e}")
         return False
 
-
 # ─────────────────────────────────────────────────────────────────────────────
-# SCHEMA SETUP  (runs automatically on startup)
+# SCHEMA SETUP  (runs on startup)
 # ─────────────────────────────────────────────────────────────────────────────
 def setup_schema():
-    """Drop and recreate tables cleanly so columns are always correct."""
+    """Create tables if they don't already exist (preserves existing data)."""
     statements = [
         "USE WAREHOUSE CROSSWALK_WH",
         "USE DATABASE SMART_CITY",
         "USE SCHEMA TRAFFIC_LOGS",
 
-        # Drop old tables first so we always get the right columns
-        "DROP TABLE IF EXISTS JAYWALKING_VIOLATIONS",
-        "DROP TABLE IF EXISTS CROSSING_LOGS",
-
         # Pedestrian crossings table
         """
-        CREATE TABLE CROSSING_LOGS (
+        CREATE TABLE IF NOT EXISTS CROSSING_LOGS (
             event_id           STRING        NOT NULL DEFAULT uuid_string(),
             timestamp          TIMESTAMP_NTZ NOT NULL DEFAULT current_timestamp(),
             pedestrian_type    STRING,
@@ -179,9 +155,9 @@ def setup_schema():
         )
         """,
 
-        # Jaywalking violations table — includes image and timestamp
+        # Jaywalking violations table
         """
-        CREATE TABLE JAYWALKING_VIOLATIONS (
+        CREATE TABLE IF NOT EXISTS JAYWALKING_VIOLATIONS (
             violation_id   STRING        NOT NULL DEFAULT uuid_string(),
             timestamp      TIMESTAMP_NTZ NOT NULL DEFAULT current_timestamp(),
             severity       STRING,
@@ -192,6 +168,16 @@ def setup_schema():
             location       STRING DEFAULT 'Hen-Tersection Unit'
         )
         """,
+
+        # App settings / config persistence table
+        """
+        CREATE TABLE IF NOT EXISTS APP_SETTINGS (
+            setting_key    STRING NOT NULL,
+            setting_value  TEXT,
+            updated_at     TIMESTAMP_NTZ NOT NULL DEFAULT current_timestamp(),
+            PRIMARY KEY (setting_key)
+        )
+        """,
     ]
 
     conn = get_connection()
@@ -199,28 +185,20 @@ def setup_schema():
         cur = conn.cursor()
         for stmt in statements:
             cur.execute(stmt.strip())
-        print("  OK - Tables created successfully.")
+        print("  OK - Tables ready.")
     except Exception as e:
         print(f"  ERROR - Schema setup failed: {e}")
         raise
     finally:
         conn.close()
 
-
 # ─────────────────────────────────────────────────────────────────────────────
 # CROSSING LOG
 # ─────────────────────────────────────────────────────────────────────────────
-def log_crossing(
-    pedestrian_type,
-    duration_seconds,
-    was_light_extended,
-    persons_count=1,
-    confidence_pct=None,
-    notes="",
-):
+def log_crossing(pedestrian_type, duration_seconds, was_light_extended,
+                 persons_count=1, confidence_pct=None, notes=""):
     event_id = str(uuid.uuid4())
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
-
     sql = """
         INSERT INTO CROSSING_LOGS
             (event_id, timestamp, pedestrian_type, duration_seconds,
@@ -238,21 +216,11 @@ def log_crossing(
     finally:
         conn.close()
 
-
 # ─────────────────────────────────────────────────────────────────────────────
 # JAYWALKING VIOLATIONS
 # ─────────────────────────────────────────────────────────────────────────────
-def log_jaywalking_violation_from_dataurl(
-    severity,
-    description,
-    data_url=None,
-    pedestrian_id=None,
-    location="Hen-Tersection Unit",
-):
-    """
-    Accepts a browser canvas data URL (data:image/png;base64,...),
-    strips the header, and stores the image + all metadata in Snowflake.
-    """
+def log_jaywalking_violation_from_dataurl(severity, description, data_url=None,
+                                          pedestrian_id=None, location="Hen-Tersection Unit"):
     violation_id = str(uuid.uuid4())
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     image_b64 = None
@@ -262,7 +230,7 @@ def log_jaywalking_violation_from_dataurl(
         header, b64data = data_url.split(",", 1)
         ext = "png" if "png" in header else "jpg"
         image_filename = f"jaywalk-violation-{int(datetime.now().timestamp() * 1000)}.{ext}"
-        image_b64 = b64data  # raw base-64, header already stripped
+        image_b64 = b64data
 
     sql = """
         INSERT INTO JAYWALKING_VIOLATIONS
@@ -276,30 +244,57 @@ def log_jaywalking_violation_from_dataurl(
             violation_id, ts, severity, description,
             image_b64, image_filename, pedestrian_id, location,
         ))
-        has_image = "YES" if image_b64 else "NO"
-        print(f"[jaywalk]   OK - {severity} at {ts} | image={has_image} | {image_filename}")
+        print(f"[jaywalk]   OK - {severity} at {ts}")
         return violation_id
     finally:
         conn.close()
 
+# ─────────────────────────────────────────────────────────────────────────────
+# SETTINGS PERSISTENCE
+# ─────────────────────────────────────────────────────────────────────────────
+def get_settings(key="app_settings"):
+    sql = "SELECT setting_value FROM APP_SETTINGS WHERE setting_key = %s LIMIT 1"
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute(sql, (key,))
+        row = cur.fetchone()
+        if row and row[0]:
+            return json.loads(row[0])
+        return {}
+    finally:
+        conn.close()
+
+def save_settings(data, key="app_settings"):
+    ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    value = json.dumps(data)
+    # MERGE: update if exists, insert if not
+    sql = """
+        MERGE INTO APP_SETTINGS AS target
+        USING (SELECT %s AS setting_key, %s AS setting_value, %s::TIMESTAMP_NTZ AS updated_at) AS src
+        ON target.setting_key = src.setting_key
+        WHEN MATCHED THEN UPDATE SET setting_value = src.setting_value, updated_at = src.updated_at
+        WHEN NOT MATCHED THEN INSERT (setting_key, setting_value, updated_at)
+            VALUES (src.setting_key, src.setting_value, src.updated_at)
+    """
+    conn = get_connection()
+    try:
+        conn.cursor().execute(sql, (key, value, ts))
+        print(f"[settings]  OK - saved key={key}")
+    finally:
+        conn.close()
 
 # ─────────────────────────────────────────────────────────────────────────────
 # QUERIES
 # ─────────────────────────────────────────────────────────────────────────────
 def get_recent_violations(limit=50):
-    """Return recent violations as a list of dicts — no image blob."""
     sql = """
         SELECT
             violation_id,
             TO_CHAR(timestamp, 'YYYY-MM-DD HH24:MI:SS') AS timestamp,
-            severity,
-            description,
-            image_filename,
-            pedestrian_id,
-            location
+            severity, description, image_filename, pedestrian_id, location
         FROM JAYWALKING_VIOLATIONS
-        ORDER BY timestamp DESC
-        LIMIT %s
+        ORDER BY timestamp DESC LIMIT %s
     """
     conn = get_connection()
     try:
@@ -309,14 +304,10 @@ def get_recent_violations(limit=50):
     finally:
         conn.close()
 
-
 def get_violation_image(violation_id):
-    """Fetch and decode the stored image for a given violation_id."""
     sql = """
-        SELECT image_data, image_filename
-        FROM JAYWALKING_VIOLATIONS
-        WHERE violation_id = %s
-        LIMIT 1
+        SELECT image_data, image_filename FROM JAYWALKING_VIOLATIONS
+        WHERE violation_id = %s LIMIT 1
     """
     conn = get_connection()
     try:
@@ -326,27 +317,19 @@ def get_violation_image(violation_id):
         if not row or not row.get("IMAGE_DATA"):
             return None, None
         image_bytes = base64.b64decode(row["IMAGE_DATA"])
-        filename = row.get("IMAGE_FILENAME", "violation.png")
-        return image_bytes, filename
+        return image_bytes, row.get("IMAGE_FILENAME", "violation.png")
     finally:
         conn.close()
 
-
 def get_recent_crossings(limit=100):
-    """Return recent crossing log entries as a list of dicts."""
     sql = """
         SELECT
             event_id,
             TO_CHAR(timestamp, 'YYYY-MM-DD HH24:MI:SS') AS timestamp,
-            pedestrian_type,
-            duration_seconds,
-            was_light_extended,
-            persons_count,
-            confidence_pct,
-            notes
+            pedestrian_type, duration_seconds, was_light_extended,
+            persons_count, confidence_pct, notes
         FROM CROSSING_LOGS
-        ORDER BY timestamp DESC
-        LIMIT %s
+        ORDER BY timestamp DESC LIMIT %s
     """
     conn = get_connection()
     try:
@@ -356,22 +339,12 @@ def get_recent_crossings(limit=100):
     finally:
         conn.close()
 
-
 # ─────────────────────────────────────────────────────────────────────────────
 # FLASK API ROUTES
 # ─────────────────────────────────────────────────────────────────────────────
 
 @app.route("/api/snowflake", methods=["POST"])
 def api_snowflake():
-    """
-    Main endpoint SmartCross.html posts all events to.
-
-    Payload shape:
-        {
-            "table":  "CROSSING_LOGS" or "JAYWALKING_VIOLATIONS",
-            "record": { ...field values... }
-        }
-    """
     payload = request.get_json(force=True)
     table   = payload.get("table", "").upper()
     record  = payload.get("record", {})
@@ -406,9 +379,32 @@ def api_snowflake():
         return jsonify({"ok": False, "error": str(exc)}), 500
 
 
+@app.route("/api/settings", methods=["GET"])
+def api_get_settings():
+    """Return persisted app settings from Snowflake."""
+    key = request.args.get("key", "app_settings")
+    try:
+        data = get_settings(key)
+        return jsonify({"ok": True, "settings": data})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 500
+
+
+@app.route("/api/settings", methods=["POST"])
+def api_save_settings():
+    """Persist app settings to Snowflake."""
+    payload = request.get_json(force=True)
+    key     = payload.get("key", "app_settings")
+    data    = payload.get("settings", {})
+    try:
+        save_settings(data, key)
+        return jsonify({"ok": True})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 500
+
+
 @app.route("/api/violations", methods=["GET"])
 def api_violations():
-    """Return recent jaywalking violations — metadata only, no image blobs."""
     limit = int(request.args.get("limit", 50))
     try:
         return jsonify(get_recent_violations(limit))
@@ -418,7 +414,6 @@ def api_violations():
 
 @app.route("/api/violations/<violation_id>/image", methods=["GET"])
 def api_violation_image(violation_id):
-    """Download the stored violation photo by its violation_id."""
     try:
         image_bytes, filename = get_violation_image(violation_id)
         if not image_bytes:
@@ -435,7 +430,6 @@ def api_violation_image(violation_id):
 
 @app.route("/api/crossings", methods=["GET"])
 def api_crossings():
-    """Return recent pedestrian crossing log entries."""
     limit = int(request.args.get("limit", 100))
     try:
         return jsonify(get_recent_crossings(limit))
@@ -445,20 +439,14 @@ def api_crossings():
 
 @app.route("/api/health", methods=["GET"])
 def api_health():
-    """Health check — confirms the server and Snowflake connection are both alive."""
     try:
         conn = get_connection()
         cur = conn.cursor()
         cur.execute("SELECT CURRENT_USER(), CURRENT_ACCOUNT(), CURRENT_TIMESTAMP()")
         row = cur.fetchone()
         conn.close()
-        return jsonify({
-            "ok":      True,
-            "status":  "Snowflake connected",
-            "user":    row[0],
-            "account": row[1],
-            "time":    str(row[2]),
-        })
+        return jsonify({"ok": True, "status": "Snowflake connected",
+                        "user": row[0], "account": row[1], "time": str(row[2])})
     except Exception as exc:
         return jsonify({"ok": False, "status": f"Snowflake error: {exc}"}), 500
 
@@ -471,25 +459,24 @@ if __name__ == "__main__":
     print("  Hen-Tersection  |  Snowflake Backend")
     print("=" * 60)
 
-    # Step 1 — test connection (tries multiple account formats)
     if not test_connection():
         print("\nCould not connect to Snowflake. Fix the error above and try again.")
         sys.exit(1)
 
-    # Step 2 — create tables
     print("\nSetting up Snowflake schema...")
     setup_schema()
 
-    # Step 3 — start Flask
     print("\nStarting Flask API server on http://localhost:5050")
     print("")
-    print("  POST /api/snowflake              <-- SmartCross.html posts here")
+    print("  POST /api/snowflake              <-- log crossings & violations")
     print("  GET  /api/violations             <-- list recent violations")
     print("  GET  /api/violations/<id>/image  <-- download a violation photo")
     print("  GET  /api/crossings              <-- list recent crossings")
+    print("  GET  /api/settings               <-- get persisted settings")
+    print("  POST /api/settings               <-- save settings to Snowflake")
     print("  GET  /api/health                 <-- check Snowflake connection")
     print("")
-    print("Keep this window open while SmartCross.html is running.")
+    print("Keep this window open while index.html is running.")
     print("=" * 60 + "\n")
 
     app.run(host="0.0.0.0", port=5050, debug=False)
