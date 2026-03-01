@@ -1670,6 +1670,8 @@ let phaseMax = 45;
 let countdownTimer = null;
 let crossingTime = 20;
 let mobilityDetected = false;
+let mobilityResetTimer = null;   // FIX 1: cancelable so phase reset can clear it
+let mobilityAtWalkStart = false; // FIX 1: snapshot at walk-phase start — immune to mid-crossing timeout
 let warnTriggered = false;
 let lastSpeech = '';
 
@@ -1758,10 +1760,20 @@ function setPhase(phase) {
     window._slowCrosserExtendedAt = null;
     window._slowCrosserFlagged = false;
     window._authoritiesAlerted = false;
+    // FIX 1: cancel any pending mobilityDetected reset and clear the flag at cycle boundary
+    if (mobilityResetTimer) { clearTimeout(mobilityResetTimer); mobilityResetTimer = null; }
+    mobilityDetected = false;
+    mobilityAtWalkStart = false;
+    // FIX 6: reset jayGoneAt on green so stale timer from a previous cycle can't cause
+    // an immediate false revert-to-green the moment a new jaywalker is detected
+    window._jayGoneAt = null;
     // Note: _triagePending/_triageDispatched/_triagePedId/_triageBbox are NOT reset here
     // They are consumed by onPhaseStart('ew-green'/'ns-green') below, then cleared in a timeout
   }
   if (phase === 'pedestrian-walk') {
+    // FIX 1: snapshot current mobility state — this value is used for the whole crossing
+    // so a mid-crossing 20s timeout expiry can't silently change the type/duration we log
+    mobilityAtWalkStart = mobilityDetected;
     // Only reset the extension guard if this is NOT being triggered by our own extension code
     // We detect that by checking _warnExtended — if it's already true, this is the extension itself
     if (!window._warnExtended) {
@@ -1870,15 +1882,20 @@ function updatePhaseUI() {
 
 function onPhaseStart(phase) {
   if (phase === 'pedestrian-walk') {
-    if (mobilityDetected) {
+    // FIX 1: use the snapshot taken at phase entry — immune to mid-crossing 20s timeout expiry
+    if (mobilityAtWalkStart) {
       speak('mobility');
       showToast('🦽 Mobility aid detected — Extended time: ' + getCrossingTime() + 's', '#3b82f6');
     } else {
       speak('walk');
       showToast('🚶 Walk signal active — ' + getCrossingTime() + 's', '#22c55e');
     }
-    logEvent('walk', mobilityDetected);
-    sfLogCrossing(mobilityDetected ? 'mobility' : 'normal', getCrossingTime(), mobilityDetected);
+    // FIX 2+3: compute real person count and avg confidence from tracked pedestrians
+    const walkPersonCount = trackedPedestrians.filter(p => p.seenThisFrame).length;
+    const walkConfs = trackedPedestrians.filter(p => p.seenThisFrame && p.conf).map(p => p.conf);
+    const walkAvgConf = walkConfs.length ? walkConfs.reduce((a,b)=>a+b,0)/walkConfs.length : 0;
+    logEvent('walk', mobilityAtWalkStart, null, walkPersonCount, walkAvgConf);
+    sfLogCrossing(mobilityAtWalkStart ? 'mobility' : 'normal', getCrossingTime(), mobilityAtWalkStart);
   } else if (phase === 'pedestrian-warn') {
     // Check immediately if anyone is still in the crosswalk — if so, skip warn and extend now
     const canvas2 = document.getElementById('canvas');
@@ -1910,6 +1927,13 @@ function onPhaseStart(phase) {
         window.speechSynthesis.speak(utt);
       }
       return;
+    }
+
+    // FIX 5: if warn fires and crosswalk is clear (normal path), reset _warnExtended so next
+    // cycle can grant the extension again. Without this, _warnExtended stays true for the
+    // rest of the session after the first time it fires, even on clean crossings.
+    if (!someoneStillCrossing) {
+      window._warnExtended = false;
     }
 
     // pedestrian-warn starting after completed extension — someone still crossing
@@ -1960,7 +1984,9 @@ function onPhaseStart(phase) {
       }
       sfLogJaywalk('VIOLATION', `Non-compliant crosser #${pedId} — still in crosswalk when light turned green. Triage dispatched.`);
       addDetectionItem('🐢', 'Non-compliant crosser', 'Still crossing at red — flagged & triage dispatched', 'jay');
-      logEvent('timeout', false);
+      // FIX 2+3: use real ped reference for count/conf if available
+      const triagePedConf = window._triagePedRef ? window._triagePedRef.conf : 0;
+      logEvent('timeout', false, null, 1, triagePedConf);
       const triagePayload = {
         event: 'crosswalk_refusal',
         timestamp: new Date().toISOString(),
@@ -2281,7 +2307,7 @@ async function loadModel() {
   }
 }
 
-async function enumerateCameras() {
+async function enumerateCameras(silent = false) {
   const sel = document.getElementById('camera-select');
   const prevVal = sel.value;
   try {
@@ -2310,7 +2336,8 @@ async function enumerateCameras() {
   // Restore previous selection if still available
   if ([...sel.options].some(o => o.value === prevVal)) sel.value = prevVal;
 
-  showToast(`📷 Found ${cameras.length} camera${cameras.length !== 1 ? 's' : ''}`, '#3b82f6');
+  // FIX 16: only show toast on explicit user-triggered refresh, not on page load
+  if (!silent) showToast(`📷 Found ${cameras.length} camera${cameras.length !== 1 ? 's' : ''}`, '#3b82f6');
 }
 
 async function startCamera() {
@@ -2336,7 +2363,7 @@ async function startCamera() {
     document.getElementById('cam-info').textContent = `SMARTCROSS // ${label.toUpperCase().substring(0, 40)}`;
 
     // Refresh the dropdown list with real labels now we have permission
-    enumerateCameras().then(() => {
+    enumerateCameras(true).then(() => {
       if (deviceId) document.getElementById('camera-select').value = deviceId;
       document.getElementById('camera-select').disabled = true;
     });
@@ -2452,14 +2479,20 @@ async function detect() {
              a[1] < b[1]+b[3] && a[1]+a[3] > b[1];
     }
 
+    // Map sensitivity slider (1=Low … 5=High) to confidence thresholds.
+    // Higher sensitivity → lower threshold → more detections.
+    const mobSens = getSettingVal('r-mob-sens', 3); // 1–5
+    const chairThresh  = [0.75, 0.65, 0.55, 0.45, 0.35][mobSens - 1];
+    const cycleThresh  = [0.80, 0.70, 0.60, 0.50, 0.40][mobSens - 1];
+
     persons.forEach(person => {
       if (mobilityReason) return;
       // Wheelchair: chair bbox must actually intersect the person bbox
-      if (allPreds.some(p => p.class === 'chair' && p.score > 0.6 && bboxIntersects(person.bbox, p.bbox))) {
+      if (allPreds.some(p => p.class === 'chair' && p.score > chairThresh && bboxIntersects(person.bbox, p.bbox))) {
         mobilityReason = 'Wheelchair detected';
       }
       // Mobility scooter: bicycle bbox must actually intersect the person bbox
-      else if (allPreds.some(p => p.class === 'bicycle' && p.score > 0.65 && bboxIntersects(person.bbox, p.bbox))) {
+      else if (allPreds.some(p => p.class === 'bicycle' && p.score > cycleThresh && bboxIntersects(person.bbox, p.bbox))) {
         mobilityReason = 'Mobility scooter detected';
       }
     });
@@ -2467,7 +2500,9 @@ async function detect() {
     if (mobilityReason && persons.length > 0 && now - lastMobilityCheck > 8000) {
       mobilityDetected = true;
       lastMobilityCheck = now;
-      setTimeout(() => { mobilityDetected = false; }, 20000);
+      // FIX 1: cancel any pending reset before setting a new one
+      if (mobilityResetTimer) clearTimeout(mobilityResetTimer);
+      mobilityResetTimer = setTimeout(() => { mobilityDetected = false; mobilityResetTimer = null; }, 20000);
       addDetectionItem('🦽', 'Mobility Aid Detected', mobilityReason, 'mobility');
       statMobility++;
       document.getElementById('stat-mobility').textContent = statMobility;
@@ -2828,7 +2863,9 @@ function captureJaywalkerSnapshot(bbox, pedId) {
   }, 'image/png');
 
   // Add a jaywalk log entry with the captured image (timestamp + download link in table)
-  logEvent('jaywalk', false, dataUrl);
+  // FIX 2+3: pass real counts — 1 jaywalker captured, conf from their tracked entry
+  const jayPed = trackedPedestrians.find(p => p.id === pedId);
+  logEvent('jaywalk', false, dataUrl, 1, jayPed ? jayPed.conf : 0);
 
   // Show thumbnail in the sidebar detection list
   const list = document.getElementById('detection-list');
@@ -2969,7 +3006,7 @@ function downloadViolationImage(filename, dataUrl) {
 // ═══════════════════════════════════════
 let activeFilter = 'all';
 
-function logEvent(type, isMobility, imageDataUrl) {
+function logEvent(type, isMobility, imageDataUrl, personCount, avgConf) {
   const now = new Date();
   const crossTime = isMobility
     ? getSettingVal('r-default-time',20) + getSettingVal('r-mobility-ext',15)
@@ -2983,14 +3020,21 @@ function logEvent(type, isMobility, imageDataUrl) {
     document.getElementById('stat-avgtime').textContent = avg+'s';
   }
 
+  // FIX 2: use real person count (passed in), fall back to 1 if unavailable
+  const realPersons = (typeof personCount === 'number' && personCount > 0) ? personCount : 1;
+  // FIX 3: use real average confidence (passed in), formatted as e.g. "82%"
+  const realConf = (typeof avgConf === 'number' && avgConf > 0)
+    ? Math.round(avgConf * 100) + '%'
+    : '—';
+
   const entry = {
     time: [now.getHours(),now.getMinutes(),now.getSeconds()].map(v=>String(v).padStart(2,'0')).join(':'),
     date: now.toLocaleDateString(),
     timestamp: now.toISOString(),
     type: type === 'jaywalk' ? 'jaywalk' : isMobility ? 'mobility' : 'normal',
-    persons: Math.floor(Math.random()*3)+1,
+    persons: realPersons,
     crossTime: type === 'jaywalk' ? '—' : crossTime + 's',
-    conf: (75 + Math.floor(Math.random()*20)) + '%',
+    conf: realConf,
     notes: type === 'jaywalk' ? 'Crossed on red phase' : isMobility ? 'Extended time applied' : 'Normal crossing',
     imageDataUrl: imageDataUrl || null,
     imageFilename: imageDataUrl ? `jaywalk-violation-${now.getTime()}.png` : null,
@@ -3046,9 +3090,18 @@ function filterLog(f, el) {
 
 
 function exportLog() {
+  // FIX 15: properly escape CSV fields — wrap in quotes and escape internal quotes
+  function csvField(val) {
+    const s = String(val == null ? '' : val);
+    // If field contains comma, double-quote, or newline — wrap in double quotes and escape internal quotes
+    if (s.includes(',') || s.includes('"') || s.includes('\n') || s.includes('\r')) {
+      return '"' + s.replace(/"/g, '""') + '"';
+    }
+    return s;
+  }
   const headers = ['Date','Time','Timestamp','Type','Persons','CrossTime','Confidence','Notes','ImageFilename'];
   const rows = eventLog.map(e=>[e.date,e.time,e.timestamp||'',e.type,e.persons,e.crossTime,e.conf,e.notes,e.imageFilename||'']);
-  const csv = [headers, ...rows].map(r=>r.join(',')).join('\n');
+  const csv = [headers, ...rows].map(r=>r.map(csvField).join(',')).join('\n');
   const blob = new Blob([csv], {type:'text/csv'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -4504,10 +4557,10 @@ function simPhaseHook(phase) {
 loadSettings();
 seedLog();
 loadModel();
-// Populate camera list on load, and refresh if devices are plugged/unplugged
-enumerateCameras();
+// FIX 16: silent=true on startup — toast fires on explicit refresh button only
+enumerateCameras(true);
 navigator.mediaDevices.addEventListener('devicechange', () => {
-  if (!running) enumerateCameras();
+  if (!running) enumerateCameras(); // device plug/unplug → show toast (not silent)
 });
 
 
