@@ -66,20 +66,33 @@ Hen-Tersection is an AI-powered smart crosswalk system that reduces pedestrian w
 
 ## Quick Start
 
-### 1. Start the Backend (Snowflake API)
+### 1. Install Dependencies
+
+Run the following commands in your terminal:
+
+| Step | Action | Command |
+|------|--------|---------|
+| 1 | Check Python version | `python --version` |
+| 2 | Install Snowflake connector | `pip install snowflake-connector-python` |
+| 3 | Install Flask | `pip install flask` |
+| 4 | Install Flask CORS | `pip install flask-cors` |
+
+**Or install all at once:**
+```
+bash
+pip install snowflake-connector-python flask flask-cors
+```
+
+### 2. Start the Backend Server
 
 ```
 bash
-# Install dependencies
-pip install snowflake-connector-python flask flask-cors
-
-# Run the server
 python Hen-tersection.py
 ```
 
 The server starts on `http://localhost:5050`
 
-### 2. Open the Interface
+### 3. Open the Interface
 
 Open `index.html` in a modern web browser (Chrome recommended).
 
@@ -114,8 +127,6 @@ The interface comes with demo data seeded for testing:
 | **Event Log** | Tabular view of all crossings and violations with filters |
 | **Traffic Sim** | Animated intersection with vehicle flow and signal control |
 | **Admin Settings** | Configuration panels for timing, detection, voice, zones, signals, DB |
-
----
 
 ## License
 
