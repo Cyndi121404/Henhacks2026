@@ -1707,6 +1707,7 @@ function setPhase(phase) {
   if (phase === 'ew-green' || phase === 'ns-green') {
     window._greenReducedThisCycle = false;
     window._greenExtendedThisCycle = false;
+    window._emptyZoneSince = null;
     window._warnExtended = false;
     window._slowCrosserExtendedAt = null;
     window._slowCrosserFlagged = false;
@@ -2390,18 +2391,27 @@ async function detect() {
     const anyoneWaiting     = trackedPedestrians.some(p => p.seenThisFrame && (p.cx < smLeft || p.cx > smRight));
     const isVehicleGreenNow2 = crossingPhase === 'ew-green' || crossingPhase === 'ns-green';
 
-    // 1. EXTEND GREEN — no one waiting: add time to green, up to 2× the base duration
-    if (isVehicleGreenNow2 && !anyoneWaiting && persons.length === 0) {
-      if (!window._greenExtendedThisCycle && phaseTimer <= 8 && phaseTimer > 0) {
-        window._greenExtendedThisCycle = true;
-        const ext = Math.min(getSettingVal('r-green-phase', 45), phaseTimer + 15);
-        phaseTimer = ext;
-        phaseMax = Math.max(phaseMax, ext);
-        updateTimerUI();
-        showToast('🟢 No pedestrians waiting — green extended', '#22c55e');
+    // EXTEND GREEN — no one waiting, but only after 1.5s of consistently empty frames (debounce)
+    if (isVehicleGreenNow2) {
+      if (!anyoneWaiting && persons.length === 0) {
+        // Start or continue the empty-zone timer
+        if (!window._emptyZoneSince) window._emptyZoneSince = nowMs;
+        const emptyMs = nowMs - window._emptyZoneSince;
+        if (!window._greenExtendedThisCycle && phaseTimer <= 8 && phaseTimer > 0 && emptyMs >= 1500) {
+          window._greenExtendedThisCycle = true;
+          const ext = Math.min(getSettingVal('r-green-phase', 45), phaseTimer + 15);
+          phaseTimer = ext;
+          phaseMax = Math.max(phaseMax, ext);
+          updateTimerUI();
+          showToast('🟢 No pedestrians waiting — green extended', '#22c55e');
+        }
+      } else {
+        // Someone is present — reset the empty timer so it has to start over
+        window._emptyZoneSince = null;
+        if (anyoneWaiting) window._greenExtendedThisCycle = false;
       }
-    } else if (isVehicleGreenNow2 && anyoneWaiting) {
-      window._greenExtendedThisCycle = false; // reset so it won't extend again this cycle
+    } else {
+      window._emptyZoneSince = null;
     }
 
     // 2. PEDESTRIAN CLEARED — cut walk phase early (with 3s grace)
