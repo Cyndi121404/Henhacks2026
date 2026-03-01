@@ -1176,6 +1176,7 @@ input[type=range] {
     <div class="admin-nav-item" onclick="switchAdminPanel('signals',this)">🚦 Signal Config</div>
     <div class="admin-nav-item" onclick="switchAdminPanel('simview',this)">🗺 Simulation View</div>
     <div class="admin-nav-item" onclick="switchAdminPanel('snowflake',this)">❄ Snowflake DB</div>
+    <div class="admin-nav-item" onclick="switchAdminPanel('dbview',this); loadDBData()">📋 View DB Data</div>
   </div>
 
   <div class="admin-content">
@@ -1605,6 +1606,71 @@ LIMIT 5;</pre>
         </div>
       </div>
     </div>
+
+    <!-- DB VIEW PANEL -->
+    <div class="admin-panel" id="panel-dbview">
+      <div class="admin-h1">Database Records</div>
+      <div class="admin-sub">Live data pulled from Snowflake via your local Flask proxy at localhost:5050</div>
+
+      <!-- Controls -->
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
+        <button class="btn primary" onclick="loadDBData()">🔄 Refresh</button>
+        <button class="btn" onclick="loadDBData(true)">🔌 Check Health</button>
+        <span id="db-status" style="font-size:0.75rem;color:var(--muted)">Not loaded</span>
+        <span style="margin-left:auto;font-size:0.72rem;color:var(--muted)">Proxy: <span style="font-family:var(--font-mono)">http://localhost:5050</span></span>
+      </div>
+
+      <!-- VIOLATIONS TABLE -->
+      <div class="settings-group" style="margin-bottom:16px">
+        <div class="settings-group-title" style="display:flex;justify-content:space-between;align-items:center">
+          <span>🚨 Jaywalking Violations</span>
+          <span id="viol-count" style="font-weight:400;color:var(--muted);font-size:0.7rem">—</span>
+        </div>
+        <div style="overflow-x:auto;max-height:300px;overflow-y:auto">
+          <table id="viol-table" style="width:100%">
+            <thead>
+              <tr>
+                <th style="background:var(--surface2)">Timestamp</th>
+                <th style="background:var(--surface2)">Severity</th>
+                <th style="background:var(--surface2)">Pedestrian ID</th>
+                <th style="background:var(--surface2)">Description</th>
+                <th style="background:var(--surface2)">Image</th>
+                <th style="background:var(--surface2)">Location</th>
+              </tr>
+            </thead>
+            <tbody id="viol-tbody">
+              <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">Click Refresh to load data</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- CROSSINGS TABLE -->
+      <div class="settings-group">
+        <div class="settings-group-title" style="display:flex;justify-content:space-between;align-items:center">
+          <span>🚶 Crossing Log</span>
+          <span id="cross-count" style="font-weight:400;color:var(--muted);font-size:0.7rem">—</span>
+        </div>
+        <div style="overflow-x:auto;max-height:300px;overflow-y:auto">
+          <table id="cross-table" style="width:100%">
+            <thead>
+              <tr>
+                <th style="background:var(--surface2)">Timestamp</th>
+                <th style="background:var(--surface2)">Type</th>
+                <th style="background:var(--surface2)">Duration (s)</th>
+                <th style="background:var(--surface2)">Extended</th>
+                <th style="background:var(--surface2)">Count</th>
+                <th style="background:var(--surface2)">Confidence</th>
+                <th style="background:var(--surface2)">Notes</th>
+              </tr>
+            </thead>
+            <tbody id="cross-tbody">
+              <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">Click Refresh to load data</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div><!-- /panel-dbview -->
 
   </div><!-- /admin-content -->
 </div>
@@ -2098,6 +2164,135 @@ function saveSFConfig() {
     document.getElementById('sf-status').style.color = 'var(--go)';
   }
   showToast('💾 Snowflake config updated', '#3b82f6');
+}
+
+// ─── DB VIEW: fetch existing Snowflake data via Flask proxy ───
+const DB_BASE = 'http://localhost:5050';
+
+async function loadDBData(healthOnly = false) {
+  const statusEl = document.getElementById('db-status');
+  if (statusEl) { statusEl.textContent = 'Loading…'; statusEl.style.color = 'var(--warn)'; }
+
+  if (healthOnly) {
+    try {
+      const r = await fetch(`${DB_BASE}/api/health`);
+      const d = await r.json();
+      if (statusEl) {
+        statusEl.textContent = d.ok ? `✓ Connected — ${d.user}@${d.account}` : `✗ ${d.status}`;
+        statusEl.style.color = d.ok ? 'var(--go)' : 'var(--stop)';
+      }
+    } catch(e) {
+      if (statusEl) { statusEl.textContent = '✗ Cannot reach proxy (is Hen-tersection.py running?)'; statusEl.style.color = 'var(--stop)'; }
+    }
+    return;
+  }
+
+  try {
+    const [vResp, cResp] = await Promise.all([
+      fetch(`${DB_BASE}/api/violations?limit=100`),
+      fetch(`${DB_BASE}/api/crossings?limit=100`)
+    ]);
+
+    if (!vResp.ok || !cResp.ok) throw new Error(`HTTP ${vResp.status} / ${cResp.status}`);
+
+    const violations = await vResp.json();
+    const crossings  = await cResp.json();
+
+    renderViolationsTable(violations);
+    renderCrossingsTable(crossings);
+
+    const total = violations.length + crossings.length;
+    if (statusEl) {
+      statusEl.textContent = `✓ Loaded ${violations.length} violations, ${crossings.length} crossings`;
+      statusEl.style.color = 'var(--go)';
+    }
+  } catch(e) {
+    if (statusEl) {
+      statusEl.textContent = `✗ Failed: ${e.message} — is Hen-tersection.py running on port 5050?`;
+      statusEl.style.color = 'var(--stop)';
+    }
+    console.error('loadDBData error:', e);
+  }
+}
+
+function renderViolationsTable(rows) {
+  const tbody = document.getElementById('viol-tbody');
+  const count = document.getElementById('viol-count');
+  if (!tbody) return;
+
+  if (!rows || rows.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">No violations found in database</td></tr>';
+    if (count) count.textContent = '0 records';
+    return;
+  }
+
+  const severityColor = { 'VIOLATION': 'var(--stop)', 'WARNING': 'var(--warn)', 'INFO': 'var(--blue)' };
+
+  tbody.innerHTML = rows.map(r => {
+    const sev = (r.SEVERITY || r.severity || '').toUpperCase();
+    const col = severityColor[sev] || 'var(--muted)';
+    const ts  = r.TIMESTAMP  || r.timestamp  || '—';
+    const pid = r.PEDESTRIAN_ID || r.pedestrian_id || '—';
+    const desc = r.DESCRIPTION  || r.description  || '—';
+    const loc  = r.LOCATION     || r.location      || '—';
+    const imgFile = r.IMAGE_FILENAME || r.image_filename;
+    const vid  = r.VIOLATION_ID || r.violation_id;
+
+    const imgCell = imgFile
+      ? `<a href="${DB_BASE}/api/violations/${vid}/image" target="_blank"
+            style="color:var(--blue);font-family:var(--font-mono);font-size:0.65rem;text-decoration:none"
+            title="${imgFile}">⬇ ${imgFile.slice(-18)}</a>`
+      : `<span style="color:var(--muted);font-size:0.65rem">—</span>`;
+
+    return `<tr>
+      <td class="log-mono">${ts}</td>
+      <td><span class="log-type-pill" style="background:${col}22;color:${col}">${sev || '—'}</span></td>
+      <td class="log-mono" style="font-size:0.65rem">${pid}</td>
+      <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.72rem" title="${desc}">${desc}</td>
+      <td>${imgCell}</td>
+      <td style="font-size:0.7rem;color:var(--muted)">${loc}</td>
+    </tr>`;
+  }).join('');
+
+  if (count) count.textContent = `${rows.length} record${rows.length !== 1 ? 's' : ''}`;
+}
+
+function renderCrossingsTable(rows) {
+  const tbody = document.getElementById('cross-tbody');
+  const count = document.getElementById('cross-count');
+  if (!tbody) return;
+
+  if (!rows || rows.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">No crossings found in database</td></tr>';
+    if (count) count.textContent = '0 records';
+    return;
+  }
+
+  const typeMap = { normal: 'pill-normal', mobility: 'pill-mobility', jaywalk: 'pill-jaywalk', timeout: 'pill-timeout' };
+
+  tbody.innerHTML = rows.map(r => {
+    const ts   = r.TIMESTAMP          || r.timestamp           || '—';
+    const type = (r.PEDESTRIAN_TYPE   || r.pedestrian_type     || 'normal').toLowerCase();
+    const dur  = r.DURATION_SECONDS   || r.duration_seconds    || '—';
+    const ext  = (r.WAS_LIGHT_EXTENDED || r.was_light_extended);
+    const cnt  = r.PERSONS_COUNT      || r.persons_count        || '—';
+    const conf = r.CONFIDENCE_PCT     || r.confidence_pct;
+    const notes = r.NOTES             || r.notes                || '';
+    const pillClass = typeMap[type] || 'pill-normal';
+    const extColor = ext === true || ext === 'true' || ext === 'TRUE' ? 'var(--go)' : 'var(--muted)';
+
+    return `<tr>
+      <td class="log-mono">${ts}</td>
+      <td><span class="log-type-pill ${pillClass}">${type}</span></td>
+      <td class="log-mono">${typeof dur === 'number' ? dur.toFixed(1) : dur}</td>
+      <td style="color:${extColor};font-size:0.72rem">${ext === true || ext === 'true' || ext === 'TRUE' ? '✓ Yes' : '—'}</td>
+      <td class="log-mono">${cnt}</td>
+      <td class="log-mono">${conf != null ? Number(conf).toFixed(1) + '%' : '—'}</td>
+      <td style="font-size:0.7rem;color:var(--muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${notes}</td>
+    </tr>`;
+  }).join('');
+
+  if (count) count.textContent = `${rows.length} record${rows.length !== 1 ? 's' : ''}`;
 }
 
 // ═══════════════════════════════════════
