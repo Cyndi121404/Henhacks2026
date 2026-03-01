@@ -634,6 +634,10 @@
     from { transform: translateX(-50%) translateY(0); }
     to   { transform: translateX(-50%) translateY(-10px); }
   }
+  @keyframes henBounceY {
+    from { transform: translateY(0); }
+    to   { transform: translateY(-10px); }
+  }
 
   /* ── SHARED UTILITY STYLES ── */
   .slide-title {
@@ -729,7 +733,7 @@
       <div style="display:flex;gap:24px;justify-content:center;margin:14px 0;font-family:'Special Elite',serif;font-size:clamp(10px,1.4vw,13px);color:var(--mid)">
         <span>📷 AI Detection</span>
         <span>🦽 Accessible</span>
-        <span>❄️ Snowflake</span>
+        <span>⚡ Efficient</span>
       </div>
       <div class="poster-reward">⭐ REWARD: SAFER STREETS ⭐ HENHACKS 2026 ⭐</div>
     </div>
@@ -794,16 +798,16 @@
           <!-- Right: stats -->
           <div style="display:flex;flex-direction:column;gap:clamp(10px,1.5vw,16px)">
             <div class="stat-badge" style="animation-delay:0.4s">
-              <div style="font-size:clamp(32px,5vw,56px);color:var(--gold)">3×</div>
-              <div style="font-size:clamp(10px,1.4vw,13px);color:var(--cream);margin-top:4px">Higher accident risk at<br>unmanaged crosswalks</div>
+              <div style="font-size:clamp(32px,5vw,56px);color:var(--red)">34%</div>
+              <div style="font-size:clamp(10px,1.4vw,13px);color:var(--cream);margin-top:4px">of pedestrian fatalities involve jaywalking</div>
             </div>
             <div class="stat-badge" style="animation-delay:0.6s">
-              <div style="font-size:clamp(32px,5vw,56px);color:var(--amber)">40%</div>
-              <div style="font-size:clamp(10px,1.4vw,13px);color:var(--cream);margin-top:4px">Of pedestrian incidents<br>involve jaywalking</div>
+              <div style="font-size:clamp(32px,5vw,56px);color:var(--amber)">41%</div>
+              <div style="font-size:clamp(10px,1.4vw,13px);color:var(--cream);margin-top:4px">of pedestrian crashes occur at intersections</div>
             </div>
             <div class="stat-badge" style="animation-delay:0.8s">
-              <div style="font-size:clamp(32px,5vw,56px);color:var(--red)">0s</div>
-              <div style="font-size:clamp(10px,1.4vw,13px);color:var(--cream);margin-top:4px">Extra crossing time given<br>to wheelchair users today</div>
+              <div style="font-size:clamp(32px,5vw,56px);color:var(--gold)">26%</div>
+              <div style="font-size:clamp(10px,1.4vw,13px);color:var(--cream);margin-top:4px">of adults over 60 walk slower than signal timing assumes</div>
             </div>
           </div>
         </div>
@@ -1060,12 +1064,12 @@
         <div class="feature-card" style="animation-delay:0.2s">
           <div style="font-size:clamp(28px,4vw,44px);margin-bottom:8px">📷</div>
           <div style="font-family:'Rye',serif;font-size:clamp(12px,1.6vw,17px);color:var(--gold);margin-bottom:6px">AI DETECTION</div>
-          <div style="font-family:'Special Elite',serif;font-size:clamp(10px,1.3vw,13px);color:var(--cream);line-height:1.5">Real-time COCO-SSD model detects pedestrians, mobility aids & jaywalkers via live webcam</div>
+          <div style="font-family:'Special Elite',serif;font-size:clamp(10px,1.3vw,13px);color:var(--cream);line-height:1.5">Real-time COCO-SSD model detects pedestrians, mobility aids & jaywalkers via live computer vision</div>
         </div>
         <div class="feature-card" style="animation-delay:0.3s">
           <div style="font-size:clamp(28px,4vw,44px);margin-bottom:8px">⏱️</div>
           <div style="font-family:'Rye',serif;font-size:clamp(12px,1.6vw,17px);color:var(--gold);margin-bottom:6px">SMART TIMING</div>
-          <div style="font-family:'Special Elite',serif;font-size:clamp(10px,1.3vw,13px);color:var(--cream);line-height:1.5">Crossing time auto-adjusts based on pedestrian count, mobility needs & peak hours</div>
+          <div style="font-family:'Special Elite',serif;font-size:clamp(10px,1.3vw,13px);color:var(--cream);line-height:1.5">Crossing time auto-adjusts based on completely customizable settings involving pedestrian count, mobility needs, & peak hours</div>
         </div>
         <div class="feature-card" style="animation-delay:0.4s">
           <div style="font-size:clamp(28px,4vw,44px);margin-bottom:8px">🦽</div>
@@ -1204,8 +1208,19 @@
     <div style="position:absolute;bottom:20%;right:5%;font-size:clamp(60px,9vw,110px);filter:brightness(0.3) sepia(0.5)">🌵</div>
     <div style="position:absolute;bottom:20%;right:13%;font-size:clamp(35px,5.5vw,70px);filter:brightness(0.3) sepia(0.5)">🌵</div>
 
-    <!-- Hero chicken -->
-    <div class="hero-rider" style="bottom:25%">🐔</div>
+    <!-- Hero chicken on pedestal -->
+    <div style="position:absolute;bottom:32%;left:0;right:0;display:flex;flex-direction:column;align-items:center;z-index:10">
+      <!-- Chicken -->
+      <div style="font-size:clamp(50px,8vw,90px);animation:henBounceY 1s ease-in-out infinite alternate;filter:drop-shadow(0 8px 20px rgba(0,0,0,0.6))">🐔</div>
+      <!-- Pedestal top cap -->
+      <div style="width:clamp(80px,12vw,140px);height:clamp(10px,1.5vw,16px);background:linear-gradient(180deg,#D4A017,#A07010);border-radius:3px 3px 0 0;box-shadow:0 -2px 8px rgba(212,160,23,0.5)"></div>
+      <!-- Pedestal body -->
+      <div style="width:clamp(60px,9vw,110px);height:clamp(30px,4vw,52px);background:linear-gradient(180deg,#5C3317,#2B1810);border-left:3px solid #8B5A2B;border-right:3px solid #1A0A04;display:flex;align-items:center;justify-content:center">
+        <div style="font-family:'Rye',serif;font-size:clamp(7px,1vw,11px);color:var(--gold);letter-spacing:0.12em;text-align:center;text-shadow:1px 1px 0 rgba(0,0,0,0.5)">HEN-TERSECTION</div>
+      </div>
+      <!-- Pedestal base -->
+      <div style="width:clamp(80px,12vw,140px);height:clamp(10px,1.4vw,14px);background:linear-gradient(180deg,#3D1F0A,#1A0A04);border-radius:0 0 3px 3px;box-shadow:0 4px 12px rgba(0,0,0,0.6)"></div>
+    </div>
 
     <!-- Text -->
     <div style="position:absolute;top:6%;left:0;right:0;text-align:center">
@@ -1215,21 +1230,84 @@
       <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:clamp(16px,2.5vw,28px);color:var(--cream);margin-top:8px;text-shadow:2px 2px 8px rgba(0,0,0,0.6);animation:fadeUp 0.6s 0.5s both">
         into a safer tomorrow
       </div>
+      <div style="font-family:'Special Elite',serif;font-size:clamp(11px,1.5vw,16px);color:var(--amber);margin-top:16px;max-width:680px;margin-left:auto;margin-right:auto;line-height:1.5;text-shadow:1px 1px 6px rgba(0,0,0,0.7);animation:fadeUp 0.6s 0.75s both;padding:0 16px">
+        Reimagining the outdated crosswalk system, Hen-Tersection detects jaywalkers, extends time for mobility aid users, and documents every event to Snowflake.
+      </div>
     </div>
 
-    <!-- CTA cards -->
-    <div style="position:absolute;bottom:4%;left:0;right:0;display:flex;justify-content:center;gap:clamp(10px,2vw,24px);padding:0 clamp(16px,3vw,40px)">
-      <div style="background:rgba(43,24,16,0.75);border:2px solid var(--gold);border-radius:6px;padding:clamp(10px,1.5vw,18px) clamp(14px,2vw,24px);text-align:center;flex:1;max-width:220px;backdrop-filter:blur(8px);animation:statPop 0.5s 0.4s both">
-        <div style="font-size:clamp(24px,3.5vw,40px)">🌐</div>
-        <div style="font-family:'Special Elite',serif;font-size:clamp(10px,1.3vw,13px);color:var(--cream);margin-top:6px">Open SmartCross.html<br>and start the camera</div>
+        
       </div>
-      <div style="background:rgba(43,24,16,0.75);border:2px solid var(--gold);border-radius:6px;padding:clamp(10px,1.5vw,18px) clamp(14px,2vw,24px);text-align:center;flex:1;max-width:220px;backdrop-filter:blur(8px);animation:statPop 0.5s 0.55s both">
-        <div style="font-size:clamp(24px,3.5vw,40px)">💻</div>
-        <div style="font-family:'Special Elite',serif;font-size:clamp(10px,1.3vw,13px);color:var(--cream);margin-top:6px">Run Hen-tersection.py<br>to connect Snowflake</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       SLIDE 7 — WORKS CITED
+  ══════════════════════════════════════════ -->
+  <div class="slide" id="slide-7">
+    <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 10%, #3D1F0A 0%, #1A0A04 60%, #0D0500 100%)"></div>
+    <div class="star" style="width:2px;height:2px;top:5%;left:8%;--dur:2.3s;--delay:0s"></div>
+    <div class="star" style="width:3px;height:3px;top:9%;left:22%;--dur:1.9s;--delay:0.4s"></div>
+    <div class="star" style="width:2px;height:2px;top:4%;left:45%;--dur:2.7s;--delay:0.8s"></div>
+    <div class="star" style="width:3px;height:3px;top:7%;left:68%;--dur:2.1s;--delay:0.2s"></div>
+    <div class="star" style="width:2px;height:2px;top:12%;left:85%;--dur:1.7s;--delay:0.6s"></div>
+    <div class="star" style="width:2px;height:2px;top:3%;left:93%;--dur:2.5s;--delay:1s"></div>
+    <div style="position:absolute;bottom:0;left:0;right:0;height:14%;background:linear-gradient(180deg,#2B1810,#0D0500)"></div>
+    <div style="position:absolute;bottom:12%;left:2%;font-size:clamp(40px,6vw,80px);filter:brightness(0.2) sepia(0.5)">🌵</div>
+    <div style="position:absolute;bottom:12%;right:3%;font-size:clamp(50px,7vw,90px);filter:brightness(0.2) sepia(0.5)">🌵</div>
+
+    <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:clamp(12px,2vw,28px) clamp(24px,4vw,80px);padding-bottom:clamp(12px,2vw,28px)">
+
+      <div style="font-family:'Rye',serif;font-size:clamp(20px,3.5vw,40px);color:var(--gold);letter-spacing:0.1em;text-shadow:2px 2px 0 rgba(0,0,0,0.5);margin-bottom:clamp(14px,2vw,28px);animation:fadeUp 0.6s 0.1s both;text-align:center">
+        📜  WORKS CITED  📜
       </div>
-      <div style="background:rgba(43,24,16,0.75);border:2px solid var(--gold);border-radius:6px;padding:clamp(10px,1.5vw,18px) clamp(14px,2vw,24px);text-align:center;flex:1;max-width:220px;backdrop-filter:blur(8px);animation:statPop 0.5s 0.7s both">
-        <div style="font-size:clamp(24px,3.5vw,40px)">🏆</div>
-        <div style="font-family:'Special Elite',serif;font-size:clamp(10px,1.3vw,13px);color:var(--cream);margin-top:6px">Safer crosswalks,<br>live — today</div>
+
+      <div style="background:rgba(245,237,214,0.97);border:3px solid var(--mid);box-shadow:8px 8px 0 rgba(43,24,16,0.4),inset 0 0 40px rgba(180,140,80,0.12);width:100%;max-width:900px;border-radius:4px;padding:clamp(18px,3vw,40px) clamp(20px,3.5vw,48px);animation:cardSlideIn 0.7s 0.2s both;display:flex;flex-direction:column;gap:clamp(12px,1.8vw,20px)">
+
+        <div style="border-bottom:1px dashed var(--mid);padding-bottom:clamp(10px,1.5vw,16px)">
+          <div style="font-family:'Special Elite',serif;font-size:clamp(10px,1.3vw,14px);color:var(--dark);line-height:1.6">
+            New York City Council Committee on Transportation and Infrastructure. <em>Testimony on Pedestrian Safety and Jaywalking Data.</em> June 25, 2024. citymeetings.nyc.
+          </div>
+          <div style="margin-top:5px;font-family:'Courier New',monospace;font-size:clamp(8px,1vw,11px);color:var(--sage)">
+            <a href="https://citymeetings.nyc/meetings/new-york-city-council/2024-06-25-0100-pm-committee-on-transportation-and-infrastructure/chapter/what-percentage-of-pedestrian-crossings-constitute-jaywalking-and-how-often-does-it-occur/" target="_blank" style="color:var(--sage)">https://citymeetings.nyc — NYC Council Transportation Committee, June 2024</a>
+          </div>
+        </div>
+
+        <div style="border-bottom:1px dashed var(--mid);padding-bottom:clamp(10px,1.5vw,16px)">
+          <div style="font-family:'Special Elite',serif;font-size:clamp(10px,1.3vw,14px);color:var(--dark);line-height:1.6">
+            National Highway Traffic Safety Administration. <em>Pedestrian Safety Enforcement Operations: A How-To Guide.</em> DOT HS 812 059. NHTSA, 2014. (Cites NCHRP 2004 intersection crash data.)
+          </div>
+          <div style="margin-top:5px;font-family:'Courier New',monospace;font-size:clamp(8px,1vw,11px);color:var(--sage)">
+            <a href="https://www.nhtsa.gov/sites/nhtsa.gov/files/812059-pedestriansafetyenforceoperahowtoguide.pdf" target="_blank" style="color:var(--sage)">https://nhtsa.gov — Pedestrian Safety Enforcement Operations Guide</a>
+          </div>
+        </div>
+
+        <div style="border-bottom:1px dashed var(--mid);padding-bottom:clamp(10px,1.5vw,16px)">
+          <div style="font-family:'Special Elite',serif;font-size:clamp(10px,1.3vw,14px);color:var(--dark);line-height:1.6">
+            National Highway Traffic Safety Administration. <em>Traffic Safety Facts 2023: Pedestrians.</em> DOT HS 813 727. NHTSA, 2025.
+          </div>
+          <div style="margin-top:5px;font-family:'Courier New',monospace;font-size:clamp(8px,1vw,11px);color:var(--sage)">
+            <a href="https://crashstats.nhtsa.dot.gov/Api/Public/ViewPublication/813727" target="_blank" style="color:var(--sage)">https://crashstats.nhtsa.dot.gov — Traffic Safety Facts 2023, Pedestrians</a>
+          </div>
+        </div>
+
+        <div style="border-bottom:1px dashed var(--mid);padding-bottom:clamp(10px,1.5vw,16px)">
+          <div style="font-family:'Special Elite',serif;font-size:clamp(10px,1.3vw,14px);color:var(--dark);line-height:1.6">
+            Kittelson &amp; Associates. "Signal Timing for Pedestrians and Bicyclists: Highlights from NCHRP Research Report 969." 2022.
+          </div>
+          <div style="margin-top:5px;font-family:'Courier New',monospace;font-size:clamp(8px,1vw,11px);color:var(--sage)">
+            <a href="https://www.kittelson.com/ideas/signal-timing-for-pedestrians-and-bicyclists-highlights-from-nchrp-research-report-969/" target="_blank" style="color:var(--sage)">https://kittelson.com — NCHRP Research Report 969 Summary</a>
+          </div>
+        </div>
+
+        <div>
+          <div style="font-family:'Special Elite',serif;font-size:clamp(10px,1.3vw,14px);color:var(--dark);line-height:1.6">
+            Stollof, E. R., McGee, H., &amp; Eccles, K. A. <em>Pedestrian Signal Safety for Older Persons.</em> AAA Foundation for Traffic Safety, 2007.
+          </div>
+          <div style="margin-top:5px;font-family:'Courier New',monospace;font-size:clamp(8px,1vw,11px);color:var(--sage)">
+            <a href="https://aaafoundation.org/pedestrian-signal-safety-older-persons/" target="_blank" style="color:var(--sage)">https://aaafoundation.org — Pedestrian Signal Safety for Older Persons</a>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
