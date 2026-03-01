@@ -890,7 +890,7 @@ input[type=range] {
   <div class="nav-tab live active" data-page="live" onclick="switchPage('live',this)">
     <div class="dot"></div> Live Monitor
   </div>
-  <div class="nav-tab" data-page="log" onclick="switchPage('log',this)">
+  <div class="nav-tab" data-page="db" onclick="switchPage('db',this); loadDBData()">
     📋 Event Log
   </div>
   <div class="nav-tab" data-page="sim" onclick="switchPage('sim',this); setTimeout(()=>{if(!simRunning){document.getElementById('sim-toggle-btn').click();}},150)">
@@ -1010,58 +1010,94 @@ input[type=range] {
   </div>
 </div>
 
-<!-- ═══════════ PAGE: LOG ═══════════ -->
-<div class="page" id="page-log">
-  <div class="log-page-header">
-    <div>
-      <div class="log-page-title">Event Log</div>
-      <div style="font-size:0.75rem; color:var(--muted); margin-top:2px">All pedestrian crossings & incidents</div>
+<!-- ═══════════ PAGE: DB RECORDS ═══════════ -->
+<div class="page" id="page-db">
+  <div style="display:flex;flex-direction:column;width:100%;overflow:hidden;">
+    <div class="log-page-header" style="flex-shrink:0">
+      <div>
+        <div class="log-page-title">Database Records</div>
+        <div style="font-size:0.75rem; color:var(--muted); margin-top:2px">Pulled fresh from Snowflake via local Flask proxy each time you open this tab</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="display:flex;gap:8px;">
+          <div class="stat-card">
+            <div class="stat-card-val green" id="stat-crossed">0</div>
+            <div class="stat-card-label">Crossed Today</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-val red" id="stat-jay">0</div>
+            <div class="stat-card-label">Jaywalkers</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-val blue" id="stat-mobility">0</div>
+            <div class="stat-card-label">Mobility Assists</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-val amber" id="stat-avgtime">--s</div>
+            <div class="stat-card-label">Avg Cross Time</div>
+          </div>
+        </div>
+        <span id="db-status" style="font-size:0.75rem;color:var(--muted)">Not loaded</span>
+        <button class="btn primary" onclick="loadDBData()">🔄 Refresh</button>
+        <button class="btn" onclick="loadDBData(true)">🔌 Check Health</button>
+        <span style="font-size:0.72rem;color:var(--muted);font-family:var(--font-mono)">localhost:5050</span>
+      </div>
     </div>
-    <div style="display:flex; align-items:center; gap:16px;">
-      <div class="stats-grid" style="display:flex; gap:8px;">
-        <div class="stat-card">
-          <div class="stat-card-val green" id="stat-crossed">0</div>
-          <div class="stat-card-label">Crossed Today</div>
+
+    <div style="flex:1;overflow-y:auto;padding:0 28px 20px;">
+
+      <!-- VIOLATIONS TABLE -->
+      <div style="margin-top:20px;margin-bottom:20px;background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+        <div style="padding:12px 16px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:0.72rem;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:var(--text)">🚨 Jaywalking Violations</span>
+          <span id="viol-count" style="font-weight:400;color:var(--muted);font-size:0.7rem">—</span>
         </div>
-        <div class="stat-card">
-          <div class="stat-card-val red" id="stat-jay">0</div>
-          <div class="stat-card-label">Jaywalkers</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-card-val blue" id="stat-mobility">0</div>
-          <div class="stat-card-label">Mobility Assists</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-card-val amber" id="stat-avgtime">--s</div>
-          <div class="stat-card-label">Avg Cross Time</div>
+        <div style="overflow-x:auto;max-height:320px;overflow-y:auto;">
+          <table id="viol-table" style="width:100%">
+            <thead>
+              <tr>
+                <th style="background:var(--surface2)">Timestamp</th>
+                <th style="background:var(--surface2)">Severity</th>
+                <th style="background:var(--surface2)">Pedestrian ID</th>
+                <th style="background:var(--surface2)">Description</th>
+                <th style="background:var(--surface2)">Image</th>
+                <th style="background:var(--surface2)">Location</th>
+              </tr>
+            </thead>
+            <tbody id="viol-tbody">
+              <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">Click Refresh to load data</td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
-      <div class="log-filters">
-        <button class="filter-btn active" onclick="filterLog('all',this)">All</button>
-        <button class="filter-btn" onclick="filterLog('normal',this)">Normal</button>
-        <button class="filter-btn" onclick="filterLog('mobility',this)">Mobility Aid</button>
-        <button class="filter-btn" onclick="filterLog('jaywalk',this)">Jaywalkers</button>
+
+      <!-- CROSSINGS TABLE -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+        <div style="padding:12px 16px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:0.72rem;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:var(--text)">🚶 Crossing Log</span>
+          <span id="cross-count" style="font-weight:400;color:var(--muted);font-size:0.7rem">—</span>
+        </div>
+        <div style="overflow-x:auto;max-height:320px;overflow-y:auto;">
+          <table id="cross-table" style="width:100%">
+            <thead>
+              <tr>
+                <th style="background:var(--surface2)">Timestamp</th>
+                <th style="background:var(--surface2)">Type</th>
+                <th style="background:var(--surface2)">Duration (s)</th>
+                <th style="background:var(--surface2)">Extended</th>
+                <th style="background:var(--surface2)">Count</th>
+                <th style="background:var(--surface2)">Confidence</th>
+                <th style="background:var(--surface2)">Notes</th>
+              </tr>
+            </thead>
+            <tbody id="cross-tbody">
+              <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">Click Refresh to load data</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
-      <button class="btn" onclick="exportLog()">↓ Export CSV</button>
+
     </div>
-  </div>
-  <div class="log-table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>Time</th>
-          <th>Event Type</th>
-          <th>Persons</th>
-          <th>Cross Time</th>
-          <th>Confidence</th>
-          <th>Notes</th>
-          <th>Image</th>
-        </tr>
-      </thead>
-      <tbody id="log-tbody">
-        <tr><td colspan="7" style="text-align:center; color:var(--muted); padding:40px;">No events yet — start the camera</td></tr>
-      </tbody>
-    </table>
   </div>
 </div>
 
@@ -1176,7 +1212,7 @@ input[type=range] {
     <div class="admin-nav-item" onclick="switchAdminPanel('signals',this)">🚦 Signal Config</div>
     <div class="admin-nav-item" onclick="switchAdminPanel('simview',this)">🗺 Simulation View</div>
     <div class="admin-nav-item" onclick="switchAdminPanel('snowflake',this)">❄ Snowflake DB</div>
-    <div class="admin-nav-item" onclick="switchAdminPanel('dbview',this); loadDBData()">📋 View DB Data</div>
+
   </div>
 
   <div class="admin-content">
@@ -1607,70 +1643,6 @@ LIMIT 5;</pre>
       </div>
     </div>
 
-    <!-- DB VIEW PANEL -->
-    <div class="admin-panel" id="panel-dbview">
-      <div class="admin-h1">Database Records</div>
-      <div class="admin-sub">Live data pulled from Snowflake via your local Flask proxy at localhost:5050</div>
-
-      <!-- Controls -->
-      <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
-        <button class="btn primary" onclick="loadDBData()">🔄 Refresh</button>
-        <button class="btn" onclick="loadDBData(true)">🔌 Check Health</button>
-        <span id="db-status" style="font-size:0.75rem;color:var(--muted)">Not loaded</span>
-        <span style="margin-left:auto;font-size:0.72rem;color:var(--muted)">Proxy: <span style="font-family:var(--font-mono)">http://localhost:5050</span></span>
-      </div>
-
-      <!-- VIOLATIONS TABLE -->
-      <div class="settings-group" style="margin-bottom:16px">
-        <div class="settings-group-title" style="display:flex;justify-content:space-between;align-items:center">
-          <span>🚨 Jaywalking Violations</span>
-          <span id="viol-count" style="font-weight:400;color:var(--muted);font-size:0.7rem">—</span>
-        </div>
-        <div style="overflow-x:auto;max-height:300px;overflow-y:auto">
-          <table id="viol-table" style="width:100%">
-            <thead>
-              <tr>
-                <th style="background:var(--surface2)">Timestamp</th>
-                <th style="background:var(--surface2)">Severity</th>
-                <th style="background:var(--surface2)">Pedestrian ID</th>
-                <th style="background:var(--surface2)">Description</th>
-                <th style="background:var(--surface2)">Image</th>
-                <th style="background:var(--surface2)">Location</th>
-              </tr>
-            </thead>
-            <tbody id="viol-tbody">
-              <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">Click Refresh to load data</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- CROSSINGS TABLE -->
-      <div class="settings-group">
-        <div class="settings-group-title" style="display:flex;justify-content:space-between;align-items:center">
-          <span>🚶 Crossing Log</span>
-          <span id="cross-count" style="font-weight:400;color:var(--muted);font-size:0.7rem">—</span>
-        </div>
-        <div style="overflow-x:auto;max-height:300px;overflow-y:auto">
-          <table id="cross-table" style="width:100%">
-            <thead>
-              <tr>
-                <th style="background:var(--surface2)">Timestamp</th>
-                <th style="background:var(--surface2)">Type</th>
-                <th style="background:var(--surface2)">Duration (s)</th>
-                <th style="background:var(--surface2)">Extended</th>
-                <th style="background:var(--surface2)">Count</th>
-                <th style="background:var(--surface2)">Confidence</th>
-                <th style="background:var(--surface2)">Notes</th>
-              </tr>
-            </thead>
-            <tbody id="cross-tbody">
-              <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">Click Refresh to load data</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div><!-- /panel-dbview -->
 
   </div><!-- /admin-content -->
 </div>
@@ -2463,15 +2435,87 @@ async function detect() {
     const persons = predictions.filter(p => p.class === 'person' &&
       p.score * 100 >= getSettingVal('r-person-thresh', 55));
 
-    // Mobility detection
-    const mobilityObjs = predictions.filter(p =>
-      ['umbrella', 'handbag', 'backpack', 'suitcase'].includes(p.class) && p.score > 0.55);
-    const hasMobility = mobilityObjs.length > 0 && persons.length > 0;
+    // ── MOBILITY AID DETECTION (multi-signal) ──
+    // COCO-SSD doesn't have wheelchair/cane classes directly.
+    // We use a combination of signals:
+    //   1. 'chair' detected overlapping or very near a person bbox → wheelchair
+    //   2. 'bicycle' detected near a person → mobility scooter / bike
+    //   3. 'baseball bat', 'tennis racket', 'umbrella' near a person → possible cane/walker
+    //   4. Person bbox aspect ratio: w/h > 0.55 → seated/wheelchair posture
+    //   5. Slow cross-frame movement of tracked person (tracked via mobilitySpeedBuffer)
+    //   6. Person bbox significantly shorter than average height (seated)
+
+    const allPreds = predictions; // includes non-person classes
+
+    // Helper: do two bboxes overlap or are they within 80px?
+    function bboxNear(a, b, margin = 80) {
+      const [ax,ay,aw,ah] = a, [bx,by,bw,bh] = b;
+      return !(ax+aw+margin < bx || bx+bw+margin < ax || ay+ah+margin < by || by+bh+margin < ay);
+    }
+
+    let mobilitySignals = [];
+
+    persons.forEach(person => {
+      const [px,py,pw,ph] = person.bbox;
+      const aspectRatio = pw / ph;
+
+      // Signal 1: chair/sofa nearby → wheelchair
+      const chairNear = allPreds.some(p =>
+        (p.class === 'chair' || p.class === 'couch') && p.score > 0.35 && bboxNear(person.bbox, p.bbox, 60)
+      );
+      if (chairNear) mobilitySignals.push({ reason: 'Wheelchair detected (chair proximity)', ped: person });
+
+      // Signal 2: bicycle nearby → mobility scooter
+      const bikeNear = allPreds.some(p =>
+        p.class === 'bicycle' && p.score > 0.4 && bboxNear(person.bbox, p.bbox, 80)
+      );
+      if (bikeNear) mobilitySignals.push({ reason: 'Mobility scooter detected (bicycle proximity)', ped: person });
+
+      // Signal 3: cane-like objects (COCO often misclassifies canes as sports items)
+      const caneProxy = allPreds.some(p =>
+        ['baseball bat','tennis racket','umbrella','skateboard','skis','ski'].includes(p.class) &&
+        p.score > 0.3 && bboxNear(person.bbox, p.bbox, 70)
+      );
+      if (caneProxy) mobilitySignals.push({ reason: 'Walking aid detected (cane/support)', ped: person });
+
+      // Signal 4: aspect ratio — wheelchair users appear wider relative to height
+      if (aspectRatio > 0.58 && ph > 60) {
+        mobilitySignals.push({ reason: 'Wheelchair posture detected (seated aspect ratio)', ped: person });
+      }
+
+      // Signal 5: person bbox is unusually short compared to frame height → seated
+      const frameFrac = ph / (canvas.height || 480);
+      const avgStandingFrac = 0.45; // typical standing person ~ 45% of frame height
+      if (frameFrac < avgStandingFrac * 0.65 && frameFrac > 0.08 && aspectRatio > 0.45) {
+        mobilitySignals.push({ reason: 'Mobility aid detected (low profile / seated silhouette)', ped: person });
+      }
+    });
+
+    // Signal 6: slow movement from tracker history
+    trackedPedestrians.forEach(tp => {
+      if (!tp.prevCx) tp.prevCx = tp.cx;
+      const moveDelta = Math.abs(tp.cx - tp.prevCx);
+      tp.prevCx = tp.cx;
+      if (!tp.slowFrames) tp.slowFrames = 0;
+      if (moveDelta < 2.5 && tp.seenThisFrame) {
+        tp.slowFrames++;
+      } else {
+        tp.slowFrames = Math.max(0, tp.slowFrames - 1);
+      }
+      // 45+ consecutive near-static frames (~1.5s at 30fps) with person in crosswalk area → cane/mobility
+      if (tp.slowFrames > 45 && !tp.mobilityFlagged) {
+        tp.mobilityFlagged = true;
+        mobilitySignals.push({ reason: 'Slow movement detected — possible cane/walker', ped: null });
+      }
+    });
+
+    const hasMobility = mobilitySignals.length > 0 && persons.length > 0;
     if (hasMobility && now - lastMobilityCheck > 8000) {
       mobilityDetected = true;
       lastMobilityCheck = now;
+      const topReason = mobilitySignals[0].reason;
       setTimeout(() => { mobilityDetected = false; }, 20000);
-      addDetectionItem('🦽', 'Mobility Aid', 'Cane / Wheelchair detected', 'mobility');
+      addDetectionItem('🦽', 'Mobility Aid Detected', topReason, 'mobility');
       statMobility++;
       document.getElementById('stat-mobility').textContent = statMobility;
     }
@@ -2576,6 +2620,7 @@ async function detect() {
           lastSeen: nowMs, seenThisFrame: true, conf: pred.score,
           loggedNormal: false, loggedJay: false, capturedPhoto: false,
           jayStartTime: null,
+          prevCx: pcx, slowFrames: 0, mobilityFlagged: false,
         };
         trackedPedestrians.push(ped);
         const type = mobilityDetected ? 'mobility' : 'normal';
@@ -2984,6 +3029,7 @@ function logEvent(type, isMobility, imageDataUrl) {
 
 function renderLog() {
   const tbody = document.getElementById('log-tbody');
+  if (!tbody) return;
   const filtered = activeFilter === 'all' ? eventLog : eventLog.filter(e => e.type === activeFilter);
   if (!filtered.length) {
     tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:40px">No events yet</td></tr>';
@@ -3025,6 +3071,7 @@ function filterLog(f, el) {
   el.classList.add('active');
   renderLog();
 }
+
 
 function exportLog() {
   const headers = ['Date','Time','Timestamp','Type','Persons','CrossTime','Confidence','Notes','ImageFilename'];
@@ -3357,32 +3404,8 @@ function saveSettings() {
 // SEED SOME DEMO LOG DATA
 // ═══════════════════════════════════════
 function seedLog() {
-  const types = ['normal','normal','normal','mobility','jaywalk','normal','mobility','normal'];
-  types.forEach((t, i) => {
-    const d = new Date(Date.now() - (types.length-i)*4*60000);
-    const ct = t === 'mobility' ? 35 : t === 'jaywalk' ? null : 20;
-    eventLog.push({
-      time: [d.getHours(),d.getMinutes(),d.getSeconds()].map(v=>String(v).padStart(2,'0')).join(':'),
-      date: d.toLocaleDateString(),
-      type: t,
-      persons: Math.floor(Math.random()*3)+1,
-      crossTime: ct ? ct+'s' : '—',
-      conf: (78+Math.floor(Math.random()*17))+'%',
-      notes: t==='jaywalk'?'Crossed on red phase':t==='mobility'?'Extended time applied':'Normal crossing'
-    });
-    if (t==='normal'||t==='mobility') { statCrossed++; crossTimes.push(ct); }
-    if (t==='jaywalk') statJay++;
-    if (t==='mobility') statMobility++;
-  });
-  document.getElementById('stat-crossed').textContent = statCrossed;
-  document.getElementById('stat-jay').textContent = statJay;
-  document.getElementById('stat-mobility').textContent = statMobility;
-  const avg = Math.round(crossTimes.reduce((a,b)=>a+b,0)/crossTimes.length);
-  document.getElementById('stat-avgtime').textContent = avg+'s';
   renderLog();
 }
-
-// TRAFFIC SIMULATION ENGINE
 // ═══════════════════════════════════════
 
 const simCanvas = document.getElementById('sim-canvas');
